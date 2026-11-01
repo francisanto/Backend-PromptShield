@@ -1,6 +1,6 @@
 {
-  "model_name": "Local Task Classification Model",
-  "evaluation_timestamp": "2026-10-25T17:03:41.540500",
+  "model_name": "PromptShield Task Classifier",
+  "evaluation_timestamp": "2026-10-30T10:23:57.130226",
   "total_samples": 240,
   "train_samples": 192,
   "test_samples": 48,
