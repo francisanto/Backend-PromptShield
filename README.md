@@ -366,41 +366,6 @@ The platform implements two decision-making algorithms:
    - Measures Euclidean distance to positive ideal solution ($D_i^+$) and negative ideal solution ($D_i^-$).
    - Handles degenerate zero-range and single-candidate cases cleanly.
 
-#### Presets & Weight Allocations by Category
-
-**Category A: Foundation Models**
-| Preset | Suitability | Cost | Context Headroom | Objective Focus |
-|---|---|---|---|---|
-| **`balanced`** | 0.45 | 0.35 | 0.20 | Balanced compromise between cost, quality, and context. |
-| **`cost_optimized`** | 0.20 | 0.70 | 0.10 | Prioritizes economical models (e.g. Gemini 2.0 Flash, GPT-4o-mini). |
-| **`quality_optimized`** | 0.80 | 0.05 | 0.15 | Prioritizes frontier capability tiers (Claude 3.7 Sonnet, o1, o3-mini, GPT-4o). |
-| **`long_context`** | 0.25 | 0.25 | 0.50 | Prioritizes massive context capacity (Gemini 2.5 Pro 2M window). |
-
-**Category B: IDE Assistants**
-| Preset | Multi-File Agent | Repo Indexing | Terminal Exec | Model Flex | Ecosystem | Privacy | Affordability |
-|---|---|---|---|---|---|---|---|
-| **`balanced`** | 0.20 | 0.15 | 0.15 | 0.15 | 0.15 | 0.10 | 0.10 |
-| **`agentic_power`** | 0.35 | 0.20 | 0.25 | 0.10 | 0.05 | 0.02 | 0.03 |
-| **`ecosystem_integration`** | 0.10 | 0.10 | 0.03 | 0.25 | 0.35 | 0.02 | 0.15 |
-| **`privacy_enterprise`** | 0.10 | 0.20 | 0.05 | 0.05 | 0.15 | 0.40 | 0.05 |
-
-**Category C: AI App Builders**
-| Preset | Full-Stack Backend | Frontend UI Quality | Deployment/Hosting | Code Export/GitHub | Autonomous Iteration | Pricing Accessibility |
-|---|---|---|---|---|---|---|
-| **`balanced`** | 0.20 | 0.20 | 0.15 | 0.20 | 0.15 | 0.10 |
-| **`full_stack`** | 0.40 | 0.05 | 0.15 | 0.15 | 0.20 | 0.05 |
-| **`frontend_ui`** | 0.05 | 0.45 | 0.20 | 0.05 | 0.10 | 0.15 |
-| **`code_ownership`** | 0.20 | 0.05 | 0.10 | 0.45 | 0.15 | 0.05 |
-
-### 4. What is NOT Measured in Offline Mode
-
-PromptShield AI strictly enforces transparent provenance:
-- **No Live Latency:** Network latency, time-to-first-token (TTFT), and token generation throughput are marked `unavailable` offline.
-- **No Fabricated Benchmarks:** The platform does not invent or claim to measure third-party MMLU, SWE-bench, or HumanEval scores offline.
-- **Relative Recommendation Scores:** The final ranking score is explicitly a multi-criteria decision trade-off index, not a probability of answer correctness.
-- **No Product Token Costs:** IDEs and App Builders disclose their real subscription and credit structures ($0 free, $10-$20/mo pro) rather than fabricated token costs.
-
----
 
 # 🧪 Running Tests & API Server
 
