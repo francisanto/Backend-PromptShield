@@ -1,0 +1,48 @@
+dataset_file,label_name,class_value,count,percentage,imbalance_ratio,status
+data/processed/mpdd_clean.csv,isMalicious,0,19617,50.15,1.01,Balanced (50.15% vs 49.85%)
+data/processed/mpdd_clean.csv,isMalicious,1,19499,49.85,1.01,Balanced (50.15% vs 49.85%)
+data/security_risk_dataset.csv,sqli,1 (positive),32,10.81,8.25,Imbalanced (7-15%)
+data/security_risk_dataset.csv,sqli,0 (negative),264,89.19,8.25,Imbalanced (7-15%)
+data/security_risk_dataset.csv,xss,1 (positive),34,11.49,7.71,Imbalanced (7-15%)
+data/security_risk_dataset.csv,xss,0 (negative),262,88.51,7.71,Imbalanced (7-15%)
+data/security_risk_dataset.csv,ssrf,1 (positive),16,5.41,17.5,Severe Imbalance (<7%)
+data/security_risk_dataset.csv,ssrf,0 (negative),280,94.59,17.5,Severe Imbalance (<7%)
+data/security_risk_dataset.csv,idor,1 (positive),28,9.46,9.57,Imbalanced (7-15%)
+data/security_risk_dataset.csv,idor,0 (negative),268,90.54,9.57,Imbalanced (7-15%)
+data/security_risk_dataset.csv,auth_weakness,1 (positive),32,10.81,8.25,Imbalanced (7-15%)
+data/security_risk_dataset.csv,auth_weakness,0 (negative),264,89.19,8.25,Imbalanced (7-15%)
+data/security_risk_dataset.csv,authz_weakness,1 (positive),33,11.15,7.97,Imbalanced (7-15%)
+data/security_risk_dataset.csv,authz_weakness,0 (negative),263,88.85,7.97,Imbalanced (7-15%)
+data/security_risk_dataset.csv,file_upload,1 (positive),30,10.14,8.87,Imbalanced (7-15%)
+data/security_risk_dataset.csv,file_upload,0 (negative),266,89.86,8.87,Imbalanced (7-15%)
+data/security_risk_dataset.csv,path_traversal,1 (positive),0,0.0,N/A,Zero Positives (Unlearnable)
+data/security_risk_dataset.csv,path_traversal,0 (negative),296,100.0,N/A,Zero Positives (Unlearnable)
+data/security_risk_dataset.csv,command_injection,1 (positive),26,8.78,10.38,Imbalanced (7-15%)
+data/security_risk_dataset.csv,command_injection,0 (negative),270,91.22,10.38,Imbalanced (7-15%)
+data/security_risk_dataset.csv,csrf,1 (positive),27,9.12,9.96,Imbalanced (7-15%)
+data/security_risk_dataset.csv,csrf,0 (negative),269,90.88,9.96,Imbalanced (7-15%)
+data/security_risk_dataset.csv,sensitive_data,1 (positive),35,11.82,7.46,Imbalanced (7-15%)
+data/security_risk_dataset.csv,sensitive_data,0 (negative),261,88.18,7.46,Imbalanced (7-15%)
+data/security_risk_dataset.csv,prompt_injection,1 (positive),25,8.45,10.84,Imbalanced (7-15%)
+data/security_risk_dataset.csv,prompt_injection,0 (negative),271,91.55,10.84,Imbalanced (7-15%)
+data/security_risk_dataset.csv,data_poisoning,1 (positive),26,8.78,10.38,Imbalanced (7-15%)
+data/security_risk_dataset.csv,data_poisoning,0 (negative),270,91.22,10.38,Imbalanced (7-15%)
+data/security_risk_dataset.csv,model_extraction,1 (positive),26,8.78,10.38,Imbalanced (7-15%)
+data/security_risk_dataset.csv,model_extraction,0 (negative),270,91.22,10.38,Imbalanced (7-15%)
+data/security_risk_dataset.csv,ai_tool_risk,1 (positive),27,9.12,9.96,Imbalanced (7-15%)
+data/security_risk_dataset.csv,ai_tool_risk,0 (negative),269,90.88,9.96,Imbalanced (7-15%)
+data/processed/web_security_payloads.csv,vulnerability,sqli,100,20.0,1.0,Perfect Balance (20% each)
+data/processed/web_security_payloads.csv,vulnerability,xss,100,20.0,1.0,Perfect Balance (20% each)
+data/processed/web_security_payloads.csv,vulnerability,csrf,100,20.0,1.0,Perfect Balance (20% each)
+data/processed/web_security_payloads.csv,vulnerability,ssrf,100,20.0,1.0,Perfect Balance (20% each)
+data/processed/web_security_payloads.csv,vulnerability,cmdinj,100,20.0,1.0,Perfect Balance (20% each)
+data/processed/web_security_payloads.csv,severity,high,262,52.4,1.0,"Imbalanced (High=52.4%, Critical=15%, Low=2.4%)"
+data/processed/web_security_payloads.csv,severity,medium,151,30.2,1.74,"Imbalanced (High=52.4%, Critical=15%, Low=2.4%)"
+data/processed/web_security_payloads.csv,severity,critical,75,15.0,3.49,"Imbalanced (High=52.4%, Critical=15%, Low=2.4%)"
+data/processed/web_security_payloads.csv,severity,low,12,2.4,21.83,"Imbalanced (High=52.4%, Critical=15%, Low=2.4%)"
+data/proposed/path_traversal_examples.csv,path_traversal,1,15,60.0,1.5,"Targeted patch (15 vulnerable, 10 secure)"
+data/proposed/path_traversal_examples.csv,path_traversal,0,10,40.0,1.5,"Targeted patch (15 vulnerable, 10 secure)"
+data/proposed/mpdd_label_corrections.csv,category,ag_news_standard,2896,88.21,1.0,Correction category breakdown
+data/proposed/mpdd_label_corrections.csv,category,stackoverflow_frontend_code,223,6.79,12.99,Correction category breakdown
+data/proposed/mpdd_label_corrections.csv,category,ag_news_security_topic,163,4.96,17.77,Correction category breakdown
+data/proposed/mpdd_label_corrections.csv,category,adversarial_jailbreak_misclassified_as_so_code,1,0.03,2896.0,Correction category breakdown
