@@ -1,0 +1,9 @@
+dataset_file,total_rows,text_column,unique_texts,exact_duplicate_rows,duplicate_text_count,near_duplicate_pairs_jaccard_gt_80,cross_dataset_leakage_matches,status
+data/processed/mpdd_clean.csv,39116,Prompt,39116,0,0,577,0,No exact duplicates; template-based near-duplicates present
+data/security_risk_dataset.csv,296,prompt,296,0,0,1,0,"No exact duplicates; 1 near-duplicate pair (Jaccard=0.86), 15 at >=0.70"
+data/processed/web_security_payloads.csv,500,payload,454,0,45,52,0,45 redundant duplicate payloads across 79 rows (34 unique duplicated)
+data/raw/web_security_payloads_clean.json,500,payload,454,0,45,52,0,Matches processed CSV (45 duplicate payloads; 1 missing payload at index 238)
+data/external/owasp_llm_top10_samples.json,10,prompt,10,0,0,0,0,Clean reference set; zero duplicates
+tests/data/benchmark_evaluation_suite.json,30,prompt,30,0,0,0,0,Golden test harness; zero duplicates; zero train set leakage
+data/proposed/path_traversal_examples.csv,25,prompt,25,0,0,0,0,Zero duplicates; max Jaccard similarity to base dataset is 0.30
+data/proposed/mpdd_label_corrections.csv,3283,prompt,3283,0,0,42,0,"Targeted correction list for 3,283 corrupted MPDD records"
