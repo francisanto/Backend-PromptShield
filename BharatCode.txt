@@ -1,0 +1,24 @@
+PromptShield AI 
+
+Provider configuration:
+own models created using machine learning models
+- JSON response mode
+- bounded timeout and explicit provider error handling
+- request IDs without logging prompts, response bodies, or credentials
+
+Use cases:
+- security risk advisory: structured architectural risk reports and remediation recommendations are generated.
+- prompt security reasoning: secondary contextual verification for complex, borderline jailbreak or injection patterns.
+- prompt optimization & hardening: natural-language rewrite suggestions to enforce defensive controls (e.g., ORM parameterization, CSP).
+- model comparison explanations: narrative summaries explaining trade-offs across foundation models and coding assistants.
+
+Trust boundaries:
+- Raw developer prompts containing sensitive data (API keys, secrets, PII) are redacted by the local detector before any external call.
+- Core risk scoring, prompt security classification, and attack surface detection are handled deterministically by local ML models.
+- Pydantic schemas strictly validate model output structure and field constraints before it is returned to the user.
+- BharatCode cannot execute commands, modify files, run code, or deploy applications.
+- Model recommendations are defensive advisories; they do not replace static code analysis (SAST) or manual penetration testing.
+- No production database, external cloud infrastructure, or private repositories are connected to BharatCode.
+- Request traces record only latency and category-level counters; prompt text and completions are never stored in external logs.
+- The platform functions fully offline with local scikit-learn models; BharatCode Qwen serves as an optional reasoning layer.
+
