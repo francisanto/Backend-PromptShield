@@ -1,5 +1,5 @@
 {
-  "evaluation_timestamp": "2026-11-14T07:17:55.833064+00:00",
+  "evaluation_timestamp": "2026-11-14T17:31:56.104807+00:00",
   "task_classifier": {
     "status": "success",
     "accuracy": 0.7708,
@@ -25,8 +25,8 @@
   },
   "complexity_model": {
     "status": "success",
-    "accuracy": 0.5,
-    "weighted_f1": 0.4861,
+    "accuracy": 0.9,
+    "weighted_f1": 0.8997,
     "tiers": [
       "simple",
       "moderate",

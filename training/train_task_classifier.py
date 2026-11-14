@@ -131,8 +131,6 @@ def train_task_classifier(
     # Save to artifacts/
     artifact_model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(artifact, artifact_model_path)
-    # Also save with filename task_classifier_model.pkl in artifacts/
-    joblib.dump(artifact, artifact_model_path.parent / "task_classifier_model.pkl")
 
     # Save to models/ for backward compatibility
     legacy_model_path.parent.mkdir(parents=True, exist_ok=True)

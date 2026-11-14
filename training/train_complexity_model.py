@@ -30,7 +30,7 @@ from sklearn.pipeline import Pipeline
 
 
 COMPLEXITY_DATASET: List[Tuple[str, str]] = [
-    # 1. SIMPLE
+    # 1. SIMPLE (50 samples)
     ("How do I check the length of a string in Python?", "simple"),
     ("What does the HTTP 404 status code mean?", "simple"),
     ("Write a one-line bash command to list all files in reverse chronological order.", "simple"),
@@ -51,8 +51,38 @@ COMPLEXITY_DATASET: List[Tuple[str, str]] = [
     ("What is the difference between null and undefined in JavaScript?", "simple"),
     ("How do I reverse a string in Python using slicing?", "simple"),
     ("What does SQL SELECT * FROM users do?", "simple"),
+    ("How do I sort a list of numbers in Python?", "simple"),
+    ("What does the git status command do?", "simple"),
+    ("How do I declare a constant variable in TypeScript?", "simple"),
+    ("Write a command to create a new directory in bash.", "simple"),
+    ("What is the difference between == and === in JavaScript?", "simple"),
+    ("How do I check my Python version in the terminal?", "simple"),
+    ("What is a dictionary in Python?", "simple"),
+    ("How do I convert a string to lowercase in Java?", "simple"),
+    ("Write a CSS selector to select all paragraphs with class intro.", "simple"),
+    ("What does the break statement do in a loop?", "simple"),
+    ("How do I read a text file line by line in Python?", "simple"),
+    ("What is the purpose of the return statement in a function?", "simple"),
+    ("How do I round a floating point number to two decimal places in Python?", "simple"),
+    ("What does pip install do?", "simple"),
+    ("How do I concatenate two strings in C++?", "simple"),
+    ("What is an array index out of bounds error?", "simple"),
+    ("How do I check if a key exists in a Python dict?", "simple"),
+    ("What is HTML and what are tags?", "simple"),
+    ("How do I print the current date in JavaScript?", "simple"),
+    ("What is the command to remove a file in Linux?", "simple"),
+    ("How do I install an npm package locally?", "simple"),
+    ("What does git commit -m do?", "simple"),
+    ("How do I import a module in Python?", "simple"),
+    ("What does the typeof operator return in JavaScript?", "simple"),
+    ("How do I find the length of an array in C#?", "simple"),
+    ("What is a syntax error in programming?", "simple"),
+    ("How do I write a single line comment in Python?", "simple"),
+    ("What is the default port for HTTP traffic?", "simple"),
+    ("How do I capitalize the first letter of a string in Python?", "simple"),
+    ("What does the len() function do in Python?", "simple"),
 
-    # 2. MODERATE
+    # 2. MODERATE (50 samples)
     ("Write a Python function to sort a list of dictionaries by a specific key with error handling.", "moderate"),
     ("Create a FastAPI endpoint that accepts user signup JSON and validates email format with Pydantic.", "moderate"),
     ("Write a React functional component for an accordion FAQ with expand and collapse state.", "moderate"),
@@ -73,8 +103,38 @@ COMPLEXITY_DATASET: List[Tuple[str, str]] = [
     ("Create a reusable React custom hook to manage localStorage synchronization.", "moderate"),
     ("Write a MongoDB aggregation pipeline to calculate average revenue per product category.", "moderate"),
     ("Implement a basic stack data structure in C++ with push, pop, and top methods.", "moderate"),
+    ("Write a Python script to parse an XML file and convert it into a pandas DataFrame.", "moderate"),
+    ("Create an Express.js middleware function that validates bearer token presence in headers.", "moderate"),
+    ("Write a React component with useState and useEffect to fetch user list from an API.", "moderate"),
+    ("Build a Flask route that handles file upload and validates image dimensions using PIL.", "moderate"),
+    ("Write a SQL query with subqueries to find the second highest salary in an employees table.", "moderate"),
+    ("Create a Python script using requests to paginate through a REST API and save results to CSV.", "moderate"),
+    ("Implement a debounce function in TypeScript for search input autocomplete.", "moderate"),
+    ("Write a Docker Compose file running a Node.js web server and a Redis cache container.", "moderate"),
+    ("Create a custom pytest fixture that sets up and tears down an in-memory SQLite database.", "moderate"),
+    ("Write a Python function to validate credit card numbers using Luhn's algorithm.", "moderate"),
+    ("Build a responsive navigation bar in React with hamburger menu toggle on mobile.", "moderate"),
+    ("Write a bash script to monitor CPU usage every 5 seconds and alert if it exceeds 90%.", "moderate"),
+    ("Create a FastAPI endpoint with Pydantic model for updating user password with regex validation.", "moderate"),
+    ("Write a Python script to scrape product titles and prices from an HTML page using BeautifulSoup.", "moderate"),
+    ("Implement a queue data structure using two stacks in Python with amortized O(1) operations.", "moderate"),
+    ("Write a SQL query using window functions (ROW_NUMBER) to deduplicate user records.", "moderate"),
+    ("Create a React hook useLocalStorage that synchronizes state with browser storage.", "moderate"),
+    ("Build an asynchronous worker in Python that processes tasks from a multiprocessing Queue.", "moderate"),
+    ("Write a Go function to parse a JSON configuration file and unmarshal into a struct.", "moderate"),
+    ("Create an Express endpoint with rate limiting using express-rate-limit middleware.", "moderate"),
+    ("Write a Python script to send an email with an attachment using smtplib and email.mime.", "moderate"),
+    ("Implement an in-memory TTL cache in Python with automatic key expiration.", "moderate"),
+    ("Create a CSS Grid layout with responsive sidebar and sticky header for an admin panel.", "moderate"),
+    ("Write a unit test in Jest to verify that a button click triggers an API call with expected payload.", "moderate"),
+    ("Build a CLI tool in Go using Cobra with commands for config init and run.", "moderate"),
+    ("Write a Python script to merge multiple PDF files into one using pypdf.", "moderate"),
+    ("Create a FastAPI dependency to extract and verify API keys from request headers.", "moderate"),
+    ("Write a SQL migration script to add an index on user email and foreign key constraint.", "moderate"),
+    ("Implement a binary tree depth-first traversal (pre-order, in-order, post-order) in Python.", "moderate"),
+    ("Build a simple WebSocket server in Node.js using ws that broadcasts messages to connected clients.", "moderate"),
 
-    # 3. COMPLEX
+    # 3. COMPLEX (50 samples)
     ("Design a scalable microservices architecture for an e-commerce platform handling 50k RPS with Stripe payments, idempotency keys, and Kafka event streaming.", "complex"),
     ("Perform a comprehensive STRIDE threat modeling analysis and security audit for an OAuth2.0 PKCE authentication flow with refresh token rotation.", "complex"),
     ("Write a high-throughput event processing worker in Python using asyncio, Redis streams, and PostgreSQL with connection pooling and dead-letter queue.", "complex"),
@@ -95,8 +155,38 @@ COMPLEXITY_DATASET: List[Tuple[str, str]] = [
     ("Create a full-stack real-time trading simulator with WebSockets, order matching engine, and Redis cache.", "complex"),
     ("Implement two-phase locking and deadlock detection graph algorithms for a relational database storage engine.", "complex"),
     ("Build a federated GraphQL gateway aggregating 6 microservices with distributed tracing and rate limiting.", "complex"),
+    ("Design an asynchronous event-driven microservices architecture using Apache Kafka, schema registry, and outbox pattern.", "complex"),
+    ("Implement a distributed rate limiting system using Redis token bucket algorithm with sliding window log.", "complex"),
+    ("Design a real-time analytics aggregation pipeline processing clickstream events with Apache Flink and ClickHouse.", "complex"),
+    ("Implement a multi-tier caching architecture with Redis Cluster, L1 in-memory cache, and cache invalidation webhooks.", "complex"),
+    ("Perform a threat model analysis and penetration testing plan for a cloud-native Kubernetes microservices deployment.", "complex"),
+    ("Build an automated database failover manager in Python with health checks, raft consensus, and DNS routing update.", "complex"),
+    ("Design a zero-downtime blue-green deployment strategy on AWS ECS with Application Load Balancer target group shifting.", "complex"),
+    ("Implement an OAuth2.0 authorization server in Go supporting authorization code, client credentials, and PKCE.", "complex"),
+    ("Build a custom Prometheus exporter in Python collecting metrics from an internal messaging queue with histogram latency buckets.", "complex"),
+    ("Design a multi-region active-active database replication architecture with conflict-free replicated data types (CRDTs).", "complex"),
+    ("Implement a distributed task scheduler in Go with worker heartbeats, leasing mechanism, and dead-letter queues.", "complex"),
+    ("Build an end-to-end telemetry pipeline using OpenTelemetry collectors, Jaeger distributed tracing, and Prometheus metrics.", "complex"),
+    ("Design a high-concurrency order book matching engine in Rust with price-time priority and atomic order execution.", "complex"),
+    ("Implement dynamic role-based access control (RBAC) with hierarchical permissions and Casbin policy engine in FastAPI.", "complex"),
+    ("Create a distributed file storage cluster in Python with data chunking, replication factor 3, and md5 integrity verification.", "complex"),
+    ("Design an ETL pipeline with Apache Airflow DAGs, Great Expectations data validation, and Snowflake data warehouse loading.", "complex"),
+    ("Implement a custom Envoy filter in C++ using WebAssembly (Wasm) for proprietary request authentication and header mutation.", "complex"),
+    ("Build a resilient webhook delivery service with exponential backoff, jitter, dead-letter queue, and HMAC signing.", "complex"),
+    ("Design a scalable search infrastructure using Elasticsearch cluster with sharding, index lifecycle management, and custom analyzers.", "complex"),
+    ("Implement an in-memory columnar storage engine in C++ with dictionary encoding and vectorized query execution.", "complex"),
+    ("Design a secure API gateway with mTLS authentication, token introspection, dynamic routing, and WAF rules.", "complex"),
+    ("Build an autonomous agent swarming system in LangGraph with state persistence, checkpointing, and tool execution safeguards.", "complex"),
+    ("Implement two-phase commit (2PC) coordinator for distributed transactions across heterogeneous relational databases.", "complex"),
+    ("Design a high-throughput log ingestion service handling 100k events/sec using Go goroutine worker pools and zero-allocation ring buffers.", "complex"),
+    ("Perform a static and dynamic binary analysis of an obfuscated ELF executable to identify hidden command-and-control communication.", "complex"),
+    ("Implement a gossip protocol in Python for decentralized cluster node discovery and failure detection.", "complex"),
+    ("Design a multi-tenant isolation architecture on Kubernetes using network policies, Cilium eBPF, and Vault secret injection.", "complex"),
+    ("Build an asynchronous video transcoding pipeline using AWS SQS, Lambda workers, and FFmpeg with progressive chunk processing.", "complex"),
+    ("Implement a persistent LSM-tree (Log-Structured Merge-tree) storage engine with write-ahead log (WAL) and SSTable compaction.", "complex"),
+    ("Design a GraphQL federation gateway using Apollo Federation v2 with subgraph schema composition and entity caching.", "complex"),
 
-    # 4. EXTREME
+    # 4. EXTREME (50 samples)
     ("Architect a fault-tolerant, globally distributed Byzantine Fault Tolerant (BFT) consensus protocol with formal TLA+ specifications, cross-shard atomic commit, and zero-knowledge proof state compression.", "extreme"),
     ("Develop a lock-free, wait-free multi-producer multi-consumer ring buffer in C++23 with memory ordering semantics (acquire-release fences) for ultra-low-latency financial trading.", "extreme"),
     ("Formally verify a kernel-level eBPF security sandbox using Coq or Isabelle, proving memory safety and non-interference against kernel privilege escalation exploits.", "extreme"),
@@ -116,7 +206,37 @@ COMPLEXITY_DATASET: List[Tuple[str, str]] = [
     ("Build an autonomous multi-agent swarming framework with formal game-theoretic Nash equilibrium coordination under adversarial network partitions.", "extreme"),
     ("Design a formal verification engine for smart contracts using abstract interpretation and Horn clause constraint solvers.", "extreme"),
     ("Implement a low-level JIT compiler for WebAssembly targeting RISC-V with register allocation via graph coloring.", "extreme"),
-    ("Architect a quantum-resistant lattice-based cryptographic key exchange protocol with side-channel timing attack resilience.", "extreme")
+    ("Architect a quantum-resistant lattice-based cryptographic key exchange protocol with side-channel timing attack resilience.", "extreme"),
+    ("Architect a zero-knowledge verifiable state machine with recursive zk-SNARKs (PLONK + Halo2) and polynomial commitment schemes.", "extreme"),
+    ("Develop a wait-free lock-free multi-producer multi-consumer bounded ring buffer in C++23 with C++ memory model acquire-release fences.", "extreme"),
+    ("Formally verify a kernel-level memory allocator using Coq, proving non-interference, memory safety, and absence of spatial-temporal violations.", "extreme"),
+    ("Design a custom optimizing JIT compiler backend targeting RISC-V with SSA conversion, dominator tree analysis, and Chaitin-Briggs graph coloring register allocation.", "extreme"),
+    ("Synthesize a Byzantine Fault Tolerant (BFT) consensus protocol with DAG-based block ordering, Narwhal-Tusk architecture, and formal TLA+ safety proofs.", "extreme"),
+    ("Develop an automated binary symbolic execution engine using SMT solver integration (Z3) to discover and synthesize zero-day ROP gadget exploit chains.", "extreme"),
+    ("Architect a planetary-scale distributed database engine with hardware TrueTime clock synchronization, Paxos replication groups, and multi-version concurrency control.", "extreme"),
+    ("Design a bare-metal type-1 hypervisor in Rust for ARM64 with stage-2 memory translation, trap-and-emulate virtualization, and formal isolation verification.", "extreme"),
+    ("Implement a quantum computing circuit compiler and density matrix simulator with Clifford+T decomposition and decoherence error models.", "extreme"),
+    ("Formally verify cryptographic zero-knowledge rollup smart contracts using abstract interpretation and Horn clause constraint solvers.", "extreme"),
+    ("Develop a real-time hard kernel scheduler with deterministic O(1) task switching bounds, zero priority inversion, and formally verified safety invariants.", "extreme"),
+    ("Architect an asynchronous actor runtime with linearizability checking, verified model-checked state transitions, and lock-free message stealing queues.", "extreme"),
+    ("Reverse engineer a hypervisor escape vulnerability exploiting nested virtualization page tables and speculative execution side-channels (Spectre-V2).", "extreme"),
+    ("Synthesize an automated theorem prover for first-order logic with equality using superposition calculus and Knuth-Bendix term ordering.", "extreme"),
+    ("Architect a verifiable decentralized multi-party computation (MPC) protocol with Shamir secret sharing and homomorphic encryption under Byzantine adversaries.", "extreme"),
+    ("Implement a high-performance custom lock-free memory allocator using thread-local maglev heaps and atomic CAS bitmap allocation.", "extreme"),
+    ("Design a formally verified network protocol stack in Idris with dependent types, mathematically proving absence of buffer overflows and protocol deadlocks.", "extreme"),
+    ("Develop a hardware transactional memory simulator with MESI/MOESI cache coherence protocols and store buffer snooping architectures.", "extreme"),
+    ("Synthesize an autonomous multi-agent operating system runtime with asynchronous microkernel IPC, capability-based security, and verified memory isolation.", "extreme"),
+    ("Architect a quantum-resistant post-quantum cryptographic lattice-based digital signature scheme (Dilithium/Falcon) with formal side-channel resilience proofs.", "extreme"),
+    ("Develop a custom polyhedral loop optimization compiler pass with Affine transformations and OpenMP/CUDA code generation for tensor accelerators.", "extreme"),
+    ("Formally verify cryptographic key exchange protocols using Tamarin Prover, proving secrecy and forward secrecy against active Dolev-Yao adversaries.", "extreme"),
+    ("Implement a bare-metal bootloader and UEFI firmware runtime in Rust with secure boot cryptographic signature verification and TPM measured boot.", "extreme"),
+    ("Architect a high-performance lock-free distributed hash table with hopscotch hashing, memory-mapped NVMe storage, and RDMA direct memory access.", "extreme"),
+    ("Synthesize an automated exploit generation engine utilizing concolic execution, taint analysis, and dynamic binary instrumentation (DBI) via Frida/QEMU.", "extreme"),
+    ("Design a fault-tolerant asynchronous distributed shared memory architecture with release consistency and causal message logging.", "extreme"),
+    ("Formally verify concurrent lock-free queue algorithms using Iris in Coq with higher-order concurrent separation logic.", "extreme"),
+    ("Develop a real-time kernel memory compression allocator using custom LZ4 streaming primitives and page table dirty tracking.", "extreme"),
+    ("Synthesize a custom microarchitecture simulator in C++ modeling out-of-order execution, branch target buffers, and superscalar pipeline hazard stalls.", "extreme"),
+    ("Architect an end-to-end zero-knowledge proof private smart contract execution environment with zk-EVM bytecode interpretation and recursive SNARK aggregation.", "extreme")
 ]
 
 
@@ -162,7 +282,8 @@ def train_complexity_model(
                 lowercase=True,
                 stop_words="english",
                 ngram_range=(1, 2),
-                max_features=4000,
+                min_df=1,
+                max_features=8000,
                 sublinear_tf=True
             )
         ),
@@ -170,7 +291,7 @@ def train_complexity_model(
             "classifier",
             LogisticRegression(
                 solver="liblinear",
-                C=2.0,
+                C=3.0,
                 class_weight="balanced",
                 random_state=random_state
             )
@@ -214,15 +335,14 @@ def train_complexity_model(
     # Save artifact
     artifact_model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(artifact, artifact_model_path)
-    joblib.dump(artifact, artifact_model_path.parent / "complexity_model.pkl")
     print(f"\nModel artifact saved to: {artifact_model_path.resolve()}")
 
     # Save metadata
     metadata = {
         "model_name": "PromptShield Complexity Scoring Model",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "algorithm": "TfidfVectorizer + Balanced Logistic Regression",
+        "algorithm": "TfidfVectorizer(1,2) + Balanced Logistic Regression(C=3.0)",
         "tiers": ["simple", "moderate", "complex", "extreme"],
         "tier_descriptions": {
             "simple": "Basic syntax lookups, elementary questions, single-turn prompts",
@@ -232,7 +352,8 @@ def train_complexity_model(
         },
         "performance": {
             "test_accuracy": round(accuracy, 4),
-            "weighted_f1": round(weighted_f1, 4)
+            "weighted_f1": round(weighted_f1, 4),
+            "macro_f1": round(macro_f1, 4)
         }
     }
 

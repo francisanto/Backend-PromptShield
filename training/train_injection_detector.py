@@ -45,7 +45,6 @@ def train_injection_detector(
     # Sync to artifacts/
     artifact_model_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(legacy_model_path, artifact_model_path)
-    shutil.copyfile(legacy_model_path, artifact_model_path.parent / "prompt_security_model.pkl")
 
     artifact_metrics_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(legacy_metrics_path, artifact_metrics_path)
