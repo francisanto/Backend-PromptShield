@@ -1,0 +1,218 @@
+{
+  "manifest_version": "1.0.0",
+  "dataset_name": "PromptShield Implementation Scope Predictor Dataset",
+  "dataset_version": "v1.0-frozen",
+  "created_at": "2026-11-14T15:25:00+05:30",
+  "provenance": {
+    "source": "Adaption Labs synthetic developer prompts export",
+    "description": "1,000 synthetic developer requests labeled for system scope, architectural components, design emphasis, complexity, and task intent.",
+    "original_file": "datasets/implementation_scope/original/dev_prompt_requirements.csv",
+    "cleaned_file": "datasets/implementation_scope/cleaned/implementation_scope_cleaned.csv"
+  },
+  "file_identification": {
+    "original_source": {
+      "path": "datasets/implementation_scope/original/dev_prompt_requirements.csv",
+      "sha256": "d33644f8eebbacb989435c0eccbbc26f106e40e2b5a8986e51bf81c1889c2595",
+      "md5": "a8312762fb67a5a251fe7601f3279598",
+      "file_size_bytes": 938017,
+      "row_count": 1000
+    },
+    "cleaned_dataset": {
+      "path": "datasets/implementation_scope/cleaned/implementation_scope_cleaned.csv",
+      "sha256": "fc0e0bb4f2125251256b897e39b2f6c62f7be88b0594fec2ad042334fad803ea",
+      "md5": "dbc492ec21f29eb77a41df81523a80cc",
+      "file_size_bytes": 323153,
+      "row_count": 869
+    }
+  },
+  "accounting_summary": {
+    "total_source_records": 1000,
+    "valid_json_completions": 980,
+    "schema_compliant_records": 979,
+    "invalid_completions_non_json": 20,
+    "schema_mismatch_wrong_schema": 1,
+    "flagged_within_schema": 110,
+    "structural_inconsistencies": 69,
+    "semantic_review_issues": 57,
+    "prompt_outliers_pipeline_leaks": 7,
+    "structural_and_semantic_overlap": 19,
+    "total_excluded_records": 131,
+    "final_clean_usable_records": 869
+  },
+  "column_definitions_and_allowed_labels": {
+    "row_id": {
+      "type": "integer",
+      "range": "0 to 999",
+      "description": "Original source row pointer"
+    },
+    "source": {
+      "type": "string",
+      "allowed_values": [
+        "adaption_labs_export"
+      ],
+      "description": "Source provenance"
+    },
+    "enhanced_prompt": {
+      "type": "string",
+      "description": "Raw developer prompt text"
+    },
+    "primary_scope": {
+      "type": "categorical",
+      "allowed_values": [
+        "backend",
+        "frontend",
+        "full_stack",
+        "design_only",
+        "security_only",
+        "unclear"
+      ],
+      "description": "Primary architectural scope boundary"
+    },
+    "frontend_required": {
+      "type": "binary",
+      "allowed_values": [
+        0,
+        1
+      ],
+      "description": "Client-side / UI code required"
+    },
+    "backend_required": {
+      "type": "binary",
+      "allowed_values": [
+        0,
+        1
+      ],
+      "description": "Server-side logic / API required"
+    },
+    "database_required": {
+      "type": "binary",
+      "allowed_values": [
+        0,
+        1
+      ],
+      "description": "Database schema / persistence required"
+    },
+    "api_required": {
+      "type": "binary",
+      "allowed_values": [
+        0,
+        1
+      ],
+      "description": "REST / GraphQL API endpoints required"
+    },
+    "authentication_required": {
+      "type": "binary",
+      "allowed_values": [
+        0,
+        1
+      ],
+      "description": "User authentication / sessions required"
+    },
+    "external_integration_required": {
+      "type": "binary",
+      "allowed_values": [
+        0,
+        1
+      ],
+      "description": "Third-party APIs / external services required"
+    },
+    "design_emphasis": {
+      "type": "categorical",
+      "allowed_values": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "Level of visual / UX styling emphasis"
+    },
+    "complexity": {
+      "type": "categorical",
+      "allowed_values": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "description": "Estimated implementation complexity"
+    },
+    "task_intent": {
+      "type": "categorical",
+      "allowed_values": [
+        "create",
+        "modify",
+        "debug",
+        "optimize",
+        "audit",
+        "explain",
+        "unclear"
+      ],
+      "description": "Primary developer objective"
+    },
+    "frontend_evidence": {
+      "type": "categorical",
+      "allowed_values": [
+        "explicit",
+        "inferred",
+        "unknown"
+      ],
+      "description": "Evidence level for frontend"
+    },
+    "backend_evidence": {
+      "type": "categorical",
+      "allowed_values": [
+        "explicit",
+        "inferred",
+        "unknown"
+      ],
+      "description": "Evidence level for backend"
+    },
+    "database_evidence": {
+      "type": "categorical",
+      "allowed_values": [
+        "explicit",
+        "inferred",
+        "unknown"
+      ],
+      "description": "Evidence level for database"
+    },
+    "api_evidence": {
+      "type": "categorical",
+      "allowed_values": [
+        "explicit",
+        "inferred",
+        "unknown"
+      ],
+      "description": "Evidence level for API"
+    },
+    "authentication_evidence": {
+      "type": "categorical",
+      "allowed_values": [
+        "explicit",
+        "inferred",
+        "unknown"
+      ],
+      "description": "Evidence level for authentication"
+    },
+    "integration_evidence": {
+      "type": "categorical",
+      "allowed_values": [
+        "explicit",
+        "inferred",
+        "unknown"
+      ],
+      "description": "Evidence level for external integration"
+    }
+  },
+  "exclusion_rules": [
+    "Non-JSON conversational chatbot outputs (20 rows)",
+    "Schema mismatch / alternate NoSQL data model JSON (1 row, Row 82)",
+    "Structural label contradictions (explicit evidence paired with 0 requirement flag; full_stack with 0 flags; invalid primary_scope) (69 rows)",
+    "Semantic misclassifications (programming tasks labelled design_only; pure backend tasks labelled full_stack; login UI inferred backend auth) (57 rows)",
+    "Prompt outliers and internal test harness leaks (>1500 chars; system prompt agent leaks; Jira/eval runner refs) (7 rows)"
+  ],
+  "known_limitations": [
+    "Severe primary_scope class imbalance (backend 63.4% vs design_only 1.0% and security_only 1.0%)",
+    "Sparse positive signal for authentication_required (7.9% positive)",
+    "Severely underrepresented task_intent: audit (only 3 total clean samples)",
+    "Repetitive synthetic scenario templates requiring group-aware cross-validation to prevent train/test data leakage"
+  ]
+}
