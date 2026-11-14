@@ -180,12 +180,20 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
             raw_detected_set.add("sqli")
 
         # D. Unprotected Login / User Authentication without declared controls
-        if re.search(r"\b(login page|user authentication|authenticate users)\b", prompt, re.IGNORECASE):
-            has_auth_controls = any(c["id"] in {"password_hashing", "mfa", "secure_sessions", "preserved_authentication"} for c in declared_controls)
-            if not has_auth_controls:
-                raw_detected_set.add("auth_weakness")
-            if re.search(r"\b(sql|database|db|postgres|mysql)\b", prompt, re.IGNORECASE):
-                raw_detected_set.add("sqli")
+        if re.search(r"\b(login(?:\s*(?:page|form|screen|view|component|endpoint))?|user authentication|authenticate users)\b", prompt, re.IGNORECASE):
+            is_login_negated = any(n.get("feature") == "login" for n in declared_negations)
+            is_db_negated = any(n.get("feature") == "database" for n in declared_negations)
+            if not is_login_negated:
+                has_auth_controls = any(c["id"] in {"password_hashing", "mfa", "secure_sessions", "preserved_authentication"} for c in declared_controls)
+                if not has_auth_controls:
+                    raw_detected_set.add("auth_weakness")
+                if not is_db_negated and re.search(r"\b(sql|database|db|postgres|mysql)\b", prompt, re.IGNORECASE):
+                    raw_detected_set.add("sqli")
+
+        # E. Plaintext / Unhashed Password Storage
+        if re.search(r"\b(plaintext|plain text|cleartext|unhashed|unencrypted)\s+(?:passwords?|credentials?|secrets?)\b|\b(?:store|save|keep)\s+(?:passwords?|credentials?)\s+in\s+(?:plaintext|plain text|cleartext)\b", prompt, re.IGNORECASE):
+            raw_detected_set.add("auth_weakness")
+            raw_detected_set.add("sensitive_data")
 
         # 4. Context-Aware Scoping for Pure Frontend Styling & Cosmetic Component Changes
         task_res = task_classifier.classify_task(prompt)

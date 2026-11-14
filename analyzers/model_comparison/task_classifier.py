@@ -77,7 +77,7 @@ DOMAIN_PATTERNS: Dict[str, List[Tuple[str, float, re.Pattern]]] = {
     ],
     "frontend_component_modification": [
         ("component_terms", 0.35, re.compile(r"\b(dashboard|navbar|sidebar|footer|header|modal|dialog|drawer|card|cards|tab|tabs|carousel|accordion)\b", re.IGNORECASE)),
-        ("page_views", 0.35, re.compile(r"\b(settings page|profile page|home page|landing page|details page|overview page|login page|view)\b", re.IGNORECASE)),
+        ("page_views", 0.35, re.compile(r"\b(settings page|profile page|home page|landing page|contact page|about page|details page|overview page|login page|view)\b", re.IGNORECASE)),
         ("component_actions", 0.40, re.compile(r"\b(replace (?:the )?[a-z_ ]+ with|swap (?:the )?|remove (?:the )?(?:dashboard )?(?:icons?|buttons?|cards?)|add (?:a )?(?:button|icon|card|modal)|move (?:the )?)\b", re.IGNORECASE)),
     ],
     "frontend_functionality": [
@@ -95,7 +95,8 @@ DOMAIN_PATTERNS: Dict[str, List[Tuple[str, float, re.Pattern]]] = {
         ("api_frameworks", 0.40, re.compile(r"\b(fastapi|express(?:js)?|koa|nest(?:js)?|flask endpoint|django rest framework|drf)\b", re.IGNORECASE)),
     ],
     "backend_development": [
-        ("backend_servers", 0.45, re.compile(r"\b(backend|server-side|server logic|microservice|microservices|service layer|background worker|celery|message queue|rabbitmq|kafka|worker|async)\b", re.IGNORECASE)),
+        ("backend_servers", 0.45, re.compile(r"\b(backend|server-side|server logic|on the server|microservice|microservices|service layer|background worker|celery|message queue|rabbitmq|kafka|worker|async)\b", re.IGNORECASE)),
+        ("server_commands", 0.45, re.compile(r"\b(shell command|system command|bash script|server command|execute.*command|run.*command on server)\b", re.IGNORECASE)),
         ("server_auth", 0.35, re.compile(r"\b(session management|jwt authentication|oauth2|server session|password hashing|bcrypt|argon2)\b", re.IGNORECASE)),
         ("backend_runtimes", 0.35, re.compile(r"\b(django|spring boot|ruby on rails|asp\.net|golang server|rust backend)\b", re.IGNORECASE)),
     ],

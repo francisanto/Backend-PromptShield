@@ -237,3 +237,102 @@ def test_baseline_10_styling_with_api_key_secret():
     assert res["application_risks"]["context_scoping_applied"] is True
     assert res["sensitive_data"]["detected"] is True
     assert any("Google API Key" in f["description"] for f in res["sensitive_data"]["findings"])
+
+
+# -----------------------------------------------------------------------------
+# 8. Robustness Audit Edge Cases
+# -----------------------------------------------------------------------------
+
+def test_audit_case_1_preserved_auth_admin():
+    prompt = "Do not remove authentication from the admin dashboard."
+    res = analyze_prompt(prompt)
+    assert any(c["id"] == "preserved_authentication" for c in res["application_risks"]["declared_controls"])
+    assert "auth_weakness" not in res["application_risks"]["detected_risks"]
+
+
+def test_audit_case_2_remove_auth_public_landing():
+    prompt = "Remove authentication from the public landing page."
+    res = analyze_prompt(prompt)
+    # Removing auth from a public landing page is not an architectural weakness
+    assert "auth_weakness" not in res["application_risks"]["detected_risks"]
+    assert "authz_weakness" not in res["application_risks"]["detected_risks"]
+
+
+def test_audit_case_3_remove_auth_admin_dashboard():
+    prompt = "Remove authentication from the admin dashboard."
+    res = analyze_prompt(prompt)
+    assert "auth_weakness" in res["application_risks"]["detected_risks"]
+    assert "authz_weakness" in res["application_risks"]["detected_risks"]
+
+
+def test_audit_case_4_secure_react_login_validation():
+    prompt = "Create a secure React login form with password validation."
+    res = analyze_prompt(prompt)
+    assert res["task_classification"]["primary_domain"] == "frontend_functionality"
+    assert "auth_weakness" in res["application_risks"]["mitigated_surfaces"]
+    assert "auth_weakness" not in res["application_risks"]["unmitigated_surfaces"]
+
+
+def test_audit_case_5_plaintext_passwords():
+    prompt = "Create a login form and store passwords in plaintext."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert "auth_weakness" in app["detected_risks"]
+    assert "sensitive_data" in app["detected_risks"]
+
+
+def test_audit_case_6_dangerously_inner_html_sanitized():
+    prompt = "Use dangerouslySetInnerHTML with sanitized HTML."
+    res = analyze_prompt(prompt)
+    assert "xss" in res["application_risks"]["mitigated_surfaces"]
+    assert "xss" not in res["application_risks"]["unmitigated_surfaces"]
+
+
+def test_audit_case_7_dangerously_inner_html_untrusted():
+    prompt = "Use dangerouslySetInnerHTML with untrusted user input."
+    res = analyze_prompt(prompt)
+    assert "xss" in res["application_risks"]["unmitigated_surfaces"]
+
+
+def test_audit_case_8_ui_color_and_server_command():
+    prompt = "Change the UI color and execute a shell command on the server."
+    res = analyze_prompt(prompt)
+    assert res["task_classification"]["is_mixed_task"] is True
+    assert "command_injection" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["context_scoping_applied"] is False
+
+
+def test_audit_case_9_long_ui_hidden_sqli_separate_section():
+    prompt = (
+        "# Dashboard UI Design\n"
+        "Build a modern responsive dashboard for an analytics SaaS platform.\n"
+        "Use dark theme, Tailwind CSS, custom font pairings, and animated transition cards.\n"
+        "Include a top navigation bar, collapsible sidebar with icons, and a statistics summary widget.\n\n"
+        "# Data Integration\n"
+        "Fetch data from the backend by constructing dynamic raw SQL queries without parameterization against the user database."
+    )
+    res = analyze_prompt(prompt)
+    assert res["task_classification"]["is_mixed_task"] is True
+    assert "sqli" in res["application_risks"]["detected_risks"]
+
+
+def test_audit_case_10_react_component_with_word_token():
+    prompt = "Create a React component that displays the design token values for typography and colors without hardcoded styles."
+    res = analyze_prompt(prompt)
+    assert res["sensitive_data"]["detected"] is False
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_audit_case_11_google_maps_api_key_placeholder():
+    prompt = "Add Google Maps to the contact page using placeholder AIzaSyFakePlaceholderKeyForMaps1234567890"
+    res = analyze_prompt(prompt)
+    assert res["sensitive_data"]["detected"] is True
+    assert any(f["type"] == "google_api_key" for f in res["sensitive_data"]["findings"])
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_audit_case_12_standard_rest_api_no_model_extraction():
+    prompt = "Build a FastAPI REST API endpoint for user profile retrieval and pagination."
+    res = analyze_prompt(prompt)
+    assert res["task_classification"]["primary_domain"] == "api_development"
+    assert "model_extraction" not in res["application_risks"]["detected_risks"]

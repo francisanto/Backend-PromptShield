@@ -15,7 +15,7 @@ CONTROL_PATTERNS: List[Dict[str, Any]] = [
         "category": "Authentication",
         "associated_risks": ["auth_weakness"],
         "regex": re.compile(
-            r"\b(argon2(?:id)?|bcrypt|pbkdf2|scrypt|salted password|password[- ]hashing)\b",
+            r"\b(argon2(?:id)?|bcrypt|pbkdf2|scrypt|salted password|password[- ]hashing|password[- ]validation|password complexity|password policy)\b",
             re.IGNORECASE
         ),
         "description": "Cryptographically secure password hashing (Argon2id, bcrypt, PBKDF2, scrypt)."
@@ -92,7 +92,7 @@ CONTROL_PATTERNS: List[Dict[str, Any]] = [
         "category": "Web Security",
         "associated_risks": ["xss"],
         "regex": re.compile(
-            r"\b(content security policy|csp|output (?:encoding|escaping)|html (?:encoding|escaping)|input sanitization|dompurify|xss filter)\b",
+            r"\b(content security policy|csp|output (?:encoding|escaping)|html (?:encoding|escaping)|(?:input\s+)?sanitiz\w+(?:\s+html)?|dompurify|xss filter)\b",
             re.IGNORECASE
         ),
         "description": "Context-aware HTML escaping and Content Security Policy headers to stop client-side execution."
@@ -198,6 +198,11 @@ OMITTED_AUTH_PRIVILEGED_REGEX = re.compile(
     re.IGNORECASE
 )
 
+PUBLIC_RESOURCE_REGEX = re.compile(
+    r"\b(?:public\s+(?:landing\s+page|page|website|site|portal|docs?|documentation|blog|view))\b",
+    re.IGNORECASE
+)
+
 
 def extract_weakened_security_controls(prompt: str) -> List[Dict[str, Any]]:
     """
@@ -216,14 +221,16 @@ def extract_weakened_security_controls(prompt: str) -> List[Dict[str, Any]]:
 
     match_weak = WEAKENED_AUTH_REGEX.search(prompt)
     if match_weak:
-        weakened.append({
-            "id": "weakened_authentication",
-            "name": "Removed / Weakened Authentication",
-            "category": "Authentication",
-            "matched_text": match_weak.group(0),
-            "description": "Explicit instruction to remove or disable authentication controls.",
-            "associated_risks": ["auth_weakness", "authz_weakness"]
-        })
+        # Removing auth from explicitly public assets (e.g. public landing page, public blog) is not a vulnerability
+        if not (PUBLIC_RESOURCE_REGEX.search(prompt) and not PRIVILEGED_ADMIN_REGEX.search(prompt)):
+            weakened.append({
+                "id": "weakened_authentication",
+                "name": "Removed / Weakened Authentication",
+                "category": "Authentication",
+                "matched_text": match_weak.group(0),
+                "description": "Explicit instruction to remove or disable authentication controls.",
+                "associated_risks": ["auth_weakness", "authz_weakness"]
+            })
 
     # 2. Omitted authentication on an administrative/privileged resource
     if PRIVILEGED_ADMIN_REGEX.search(prompt):
@@ -296,6 +303,11 @@ def extract_declared_negations(prompt: str) -> List[Dict[str, Any]]:
 
         # If clause contains "do not remove auth", it is a preserved control, not a negation
         if PRESERVED_AUTH_REGEX.search(clause_text):
+            continue
+
+        # If clause begins with control negations like "without parameterization", "without sanitization",
+        # it is omitting a security defense, NOT negating a system feature like database or login
+        if re.search(r"^\s*(?:parameteriz\w+|sanitiz\w+|validat\w+|escaping|encoding)\b", clause_text):
             continue
 
         for target in NEGATION_TARGETS:
