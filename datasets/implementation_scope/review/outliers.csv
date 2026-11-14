@@ -1,0 +1,1271 @@
+row_id,outlier_type,prompt_length,details,enhanced_prompt
+13,Copied internal codebase instructions / ML experiment harness,393,Character length: 393. Matches internal infrastructure or system instructions.,"Hey, need to tweak our eval runner. We're testing some new steering coeffs and wanna crank up the randomness a bit. Where exactly do i change the attempts per prompt count? Also the temp settings for the local vllm models are locked at 0.0 right now -- which file handles that so i can make it more stochastic? And if i need to add a new model provider to the list, where does that logic live?"
+119,Copied internal codebase instructions / ML experiment harness,332,Character length: 332. Matches internal infrastructure or system instructions.,"I need to run our truth-seeking eval suite (AGI-1886) but route the prompts through the new deliberation_rag pipeline (AGI-1923) instead of hitting the API directly. Can you show me how to integrate the SugyaPipeline into run_eval.py as a custom provider? Also, what are the main gotchas regarding the corpus dependency and latency?"
+221,Copied internal codebase instructions / ML experiment harness,425,Character length: 425. Matches internal infrastructure or system instructions.,"im trying to tune the gradient routing params for my moe unlearning exp. intuitively, what happens if i set aux_route_prc and robust_prc high vs low? like does high aux_route just mess up the separation or does it help the core model learn better? and same for robust_prc -- does training aux experts on core data actually stop adversarial fine-tuning or just waste compute? need to know the tradeoffs before i run the sweep."
+406,Copied internal codebase instructions / ML experiment harness,449,Character length: 449. Matches internal infrastructure or system instructions.,"hey, need a quick tweak to the config saving logic across the codebases. right now the full json dump is flooding the training logs at INFO level (specially in ICML and Multi-GPU branches). can we flip that to DEBUG like we did in AGI-1407? also check if core_labels is actually being saved in the ICML version, i think it might be missing from the dict even though it's in the dataclass. dont break the atomic writes or the main-process guards tho."
+804,Copied internal codebase instructions / ML experiment harness,686,Character length: 686. Matches internal infrastructure or system instructions.,"hey, need to tweak the gradient routing exps. first, can we swap out that `core_only` bool flag for an explicit `targets` list in the filtering stage? makes it way clearer what we're actually running. update main.py logic and the exp_02/exp_03 scripts to use this new format (pass the full aux_labels list when we want the old 'core_only' behavior). 
+
+also, the hyperparam sweep in exp_06 looks a bit off--when we sweep one param (like aux_route_prc), the other (robust_prc) is stuck at 0.0. pretty sure we wanna hold it at the standard baseline value from exp_01 instead (0.5 for robust, 0.75 for aux_route). fix those defaults so the sweep is testing against the real baseline config."
+850,Copied internal codebase instructions / ML experiment harness,538,Character length: 538. Matches internal infrastructure or system instructions.,"Hey, need to tweak our eval runner configs. Bump the attempts per prompt up to 100 for both the PVI baseline and the ADL replication experiments so we get better statistical significance. Also, the local vLLM outputs are too deterministic—adjust the sampling params (temp, top_p) in the providers module to introduce more randomness, and make sure we're passing a temperature param to the cloud APIs too if possible. Oh, and lets add gpt-5.2 and the Qwen 7B model back into the frontier eval list, they were commented out for some reason."
+946,Extremely long prompt (58457 chars); Irrelevant system prompt copied into user prompt,58457,Character length: 58457. Matches internal infrastructure or system instructions.,"system: You are OpenCode, the best coding agent on the planet.
+
+You are an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
+
+IMPORTANT: You must NEVER generate or guess URLs for the user unless you are confident that the URLs are for helping the user with programming. You may use URLs provided by the user in their messages or local files.
+
+If the user asks for help or wants to give feedback inform them of the following:
+- ctrl+p to list available actions
+- To give feedback, users should report the issue at
+  https://github.com/anomalyco/opencode
+
+When the user directly asks about OpenCode (eg. ""can OpenCode do..."", ""does OpenCode have...""), or asks in second person (eg. ""are you able..."", ""can you do...""), or asks how to use a specific OpenCode feature (eg. implement a hook, write a slash command, or install an MCP server), use the WebFetch tool to gather information to answer the question from OpenCode docs. The list of available docs is available at https://opencode.ai/docs
+
+# Tone and style
+- Only use emojis if the user explicitly requests it. Avoid using emojis in all communication unless asked.
+- Your output will be displayed on a command line interface. Your responses should be short and concise. You can use GitHub-flavored markdown for formatting, and will be rendered in a monospace font using the CommonMark specification.
+- Output text to communicate with the user; all text you output outside of tool use is displayed to the user. Only use tools to complete tasks. Never use tools like Bash or code comments as means to communicate with the user during the session.
+- NEVER create files unless they're absolutely necessary for achieving your goal. ALWAYS prefer editing an existing file to creating a new one. This includes markdown files.
+
+# Professional objectivity
+Prioritize technical accuracy and truthfulness over validating the user's beliefs. Focus on facts and problem-solving, providing direct, objective technical info without any unnecessary superlatives, praise, or emotional validation. It is best for the user if OpenCode honestly applies the same rigorous standards to all ideas and disagrees when necessary, even if it may not be what the user wants to hear. Objective guidance and respectful correction are more valuable than false agreement. Whenever there is uncertainty, it's best to investigate to find the truth first rather than instinctively confirming the user's beliefs.
+
+# Task Management
+You have access to the TodoWrite tools to help you manage and plan tasks. Use these tools VERY frequently to ensure that you are tracking your tasks and giving the user visibility into your progress.
+These tools are also EXTREMELY helpful for planning tasks, and for breaking down larger complex tasks into smaller steps. If you do not use this tool when planning, you may forget to do important tasks - and that is unacceptable.
+
+It is critical that you mark todos as completed as soon as you are done with a task. Do not batch up multiple tasks before marking them as completed.
+
+Examples:
+
+<example>
+user: Run the build and fix any type errors
+assistant: I'm going to use the TodoWrite tool to write the following items to the todo list:
+- Run the build
+- Fix any type errors
+
+I'm now going to run the build using Bash.
+
+Looks like I found 10 type errors. I'm going to use the TodoWrite tool to write 10 items to the todo list.
+
+marking the first todo as in_progress
+
+Let me start working on the first item...
+
+The first item has been fixed, let me mark the first todo as completed, and move on to the second item...
+..
+..
+</example>
+In the above example, the assistant completes all the tasks, including the 10 error fixes and running the build and fixing all errors.
+
+<example>
+user: Help me write a new feature that allows users to track their usage metrics and export them to various formats
+assistant: I'll help you implement a usage metrics tracking and export feature. Let me first use the TodoWrite tool to plan this task.
+Adding the following todos to the todo list:
+1. Research existing metrics tracking in the codebase
+2. Design the metrics collection system
+3. Implement core metrics tracking functionality
+4. Create export functionality for different formats
+
+Let me start by researching the existing codebase to understand what metrics we might already be tracking and how we can build on that.
+
+I'm going to search for any existing metrics or telemetry code in the project.
+
+I've found some existing telemetry code. Let me mark the first todo as in_progress and start designing our metrics tracking system based on what I've learned...
+
+[Assistant continues implementing the feature step by step, marking todos as in_progress and completed as they go]
+</example>
+
+
+# Doing tasks
+The user will primarily request you perform software engineering tasks. This includes solving bugs, adding new functionality, refactoring code, explaining code, and more. For these tasks the following steps are recommended:
+- 
+- Use the TodoWrite tool to plan the task if required
+
+- Tool results and user messages may include <system-reminder> tags. <system-reminder> tags contain useful information and reminders. They are automatically added by the system, and bear no direct relation to the specific tool results or user messages in which they appear.
+
+
+# Tool usage policy
+- When doing file search, prefer to use the Task tool in order to reduce context usage.
+- You should proactively use the Task tool with specialized agents when the task at hand matches the agent's description.
+
+- When WebFetch returns a message about a redirect to a different host, you should immediately make a new WebFetch request with the redirect URL provided in the response.
+- You can call multiple tools in a single response. If you intend to call multiple tools and there are no dependencies between them, make all independent tool calls in parallel. Maximize use of parallel tool calls where possible to increase efficiency. However, if some tool calls depend on previous calls to inform dependent values, do NOT call these tools in parallel and instead call them sequentially. For instance, if one operation must complete before another starts, run these operations sequentially instead. Never use placeholders or guess missing parameters in tool calls.
+- If the user specifies that they want you to run tools ""in parallel"", you MUST send a single message with multiple tool use content blocks. For example, if you need to launch multiple agents in parallel, send a single message with multiple Task tool calls.
+- Use specialized tools instead of bash commands when possible, as this provides a better user experience. For file operations, use dedicated tools: Read for reading files instead of cat/head/tail, Edit for editing instead of sed/awk, and Write for creating files instead of cat with heredoc or echo redirection. Reserve bash tools exclusively for actual system commands and terminal operations that require shell execution. NEVER use bash echo or other command-line tools to communicate thoughts, explanations, or instructions to the user. Output all communication directly in your response text instead.
+- VERY IMPORTANT: When exploring the codebase to gather context or to answer a question that is not a needle query for a specific file/class/function, it is CRITICAL that you use the Task tool instead of running search commands directly.
+<example>
+user: Where are errors from the client handled?
+assistant: [Uses the Task tool to find the files that handle client errors instead of using Glob or Grep directly]
+</example>
+<example>
+user: What is the codebase structure?
+assistant: [Uses the Task tool]
+</example>
+
+IMPORTANT: Always use the TodoWrite tool to plan and track tasks throughout the conversation.
+
+# Code References
+
+When referencing specific functions or pieces of code include the pattern `file_path:line_number` to allow the user to easily navigate to the source code location.
+
+<example>
+user: Where are errors from the client handled?
+assistant: Clients are marked as failed in the `connectToServer` function in src/services/process.ts:712.
+</example>
+
+You are powered by the model named anthropic/claude-sonnet-4.6. The exact model ID is anthropic/claude-sonnet-4.6
+Here is some useful information about the environment you are running in:
+<env>
+  Working directory: /private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7
+  Workspace root folder: /private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7
+  Is directory a git repo: no
+  Platform: darwin
+  Today's date: Thu Jun 18 2026
+</env>
+Instructions from: /Users/noahkasmanoff/ide-refactor/vscode/AGENTS.md
+# VS Code Agents Instructions
+
+This file provides instructions for AI coding agents working with the VS Code codebase.
+
+For detailed project overview, architecture, coding guidelines, and validation steps, see the [Copilot Instructions](.github/copilot-instructions.md).
+
+Skills provide specialized instructions and workflows for specific tasks.
+Use the skill tool to load a skill when a task matches its description.
+<available_skills>
+  <skill>
+    <name>customize-opencode</name>
+    <description>Use ONLY when the user is editing or creating opencode's own configuration: opencode.json, opencode.jsonc, files under .opencode/, or files under ~/.config/opencode/. Also use when creating or fixing opencode agents, subagents, skills, plugins, MCP servers, or permission rules. Do not use for the user's own application code, or for any project that is not configuring opencode itself.</description>
+    <location>file:///private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/%3Cbuilt-in%3E</location>
+  </skill>
+  <skill>
+    <name>launch</name>
+    <description>Launch Code OSS (VS Code from sources) into an isolated throwaway profile with unique debug ports so you can drive it with @playwright/cli AND attach a Node debugger via dap-cli in the same session. Use when working on VS Code itself and you want to interact with the running workbench, automate chat or UI flows, test UI features, take screenshots, set breakpoints in the renderer / extension host / main process, or combine UI driving with debugging.</description>
+    <location>file:///Users/noahkasmanoff/ide-refactor/vscode/.claude/skills/launch/SKILL.md</location>
+  </skill>
+</available_skills>
+
+user: ""Quick question -- is @scripts/run_visual_prompt_sweep.sh using held out classes for validation?""
+
+tool: <path>/private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/scripts/run_visual_prompt_sweep.sh</path>
+<type>file</type>
+<content>
+1: #!/bin/bash
+2: 
+3: # ============================================================================
+4: # Visual-prompt fine-tuning sweep.
+5: #
+6: # Runs `visual_prompt_trainer.py` with several hparam configurations, each
+7: # tuned to make good use of the GPU (bigger LoRA adapters, more boxes per
+8: # sample, more frequent optimizer steps). Every config writes to its own
+9: # `model_artifacts/vp_sweep/<name>/` and `predictions/vp_sweep/<name>/` dir,
+10: # so adapters and prediction figures don't overwrite across runs.
+11: #
+12: # Configs vary the most informative axes:
+13: #   1. wide_proj_mlp        - emphasize the visual-prompt projection adapter
+14: #                             (the ONLY trainable path from query_crop -> splice)
+15: #   2. wide_text            - emphasize the text-decoder adapter
+16: #   3. wide_both            - both adapters big (high capacity baseline)
+17: #   4. wide_both_high_lr    - same as 3 with lr=1e-4 (faster optimization?)
+18: #   5. fat_objects          - more boxes per sample (more KV-cache + per-step
+19: #                             compute), medium adapters
+20: #
+21: # These are sequential. With `set -e`, a failure in one config aborts the
+22: # sweep. Comment out configs you don't want, or copy-paste one config to run
+23: # it standalone.
+24: #
+25: # Each config takes roughly the same wall clock as the baseline default run
+26: # (~10h on an L40S at the time of writing). Expect ~2 days for the full sweep.
+27: #
+28: # IMPORTANT: this script assumes no other training jobs are already on the
+29: # GPU. The high-capacity configs alone push memory well past 25 GB.
+30: # ============================================================================
+31: 
+32: set -e
+33: 
+34: WANDB_PROJECT=moondream-visual-prompt-ft-sweep
+35: ROOT_ARTIFACTS=model_artifacts/vp_sweep
+36: ROOT_PREDS=predictions/vp_sweep
+37: 
+38: mkdir -p ""${ROOT_ARTIFACTS}"" ""${ROOT_PREDS}""
+39: 
+40: echo ""Starting visual-prompt sweep...""
+41: echo ""Artifacts root:   ${ROOT_ARTIFACTS}""
+42: echo ""Predictions root: ${ROOT_PREDS}""
+43: echo ""Wandb project:    ${WANDB_PROJECT}""
+44: echo ""==========================================""
+45: 
+46: run_config() {
+47:     local name=$1
+48:     shift
+49:     echo """"
+50:     echo ""==========================================""
+51:     echo ""Config: ${name}""
+52:     echo ""Started:  $(date)""
+53:     echo ""==========================================""
+54:     python visual_prompt_trainer.py \
+55:         --run_name=""${name}"" \
+56:         --artifact_dir=""${ROOT_ARTIFACTS}/${name}"" \
+57:         --predictions_dir=""${ROOT_PREDS}/${name}"" \
+58:         --wandb_project=""${WANDB_PROJECT}"" \
+59:         ""$@""
+60:     echo ""Finished: $(date)  (config: ${name})""
+61: }
+62: 
+63: # ----------------------------------------------------------------------------
+64: # Config 1: wide_proj_mlp
+65: # Push the proj_mlp LoRA hard - the only path that shapes how query_crop
+66: # embeddings get spliced into the prompt slot. Default-sized text adapter.
+67: # ----------------------------------------------------------------------------
+68: run_config wide_proj_mlp \
+69:     --lr=5e-5 \
+70:     --epochs=5 \
+71:     --grad_accum_steps=32 \
+72:     --eval_interval=10 \
+73:     --lora_rank=32 \
+74:     --lora_alpha=64 \
+75:     --lora_dropout=0.05 \
+76:     --proj_mlp_lora_rank=64 \
+77:     --proj_mlp_lora_alpha=128 \
+78:     --proj_mlp_lora_dropout=0.0 \
+79:     --max_objects_per_sample=20 \
+80:     --num_triplets_per_epoch=10000
+81: 
+82: # ----------------------------------------------------------------------------
+83: # Config 2: wide_text
+84: # Push the text-decoder LoRA. Default-sized proj_mlp adapter. Lets us
+85: # attribute gains to the text side vs the visual-prompt projection side.
+86: # ----------------------------------------------------------------------------
+87: run_config wide_text \
+88:     --lr=5e-5 \
+89:     --epochs=5 \
+90:     --grad_accum_steps=32 \
+91:     --eval_interval=10 \
+92:     --lora_rank=64 \
+93:     --lora_alpha=128 \
+94:     --lora_dropout=0.05 \
+95:     --proj_mlp_lora_rank=8 \
+96:     --proj_mlp_lora_alpha=16 \
+97:     --proj_mlp_lora_dropout=0.0 \
+98:     --max_objects_per_sample=20 \
+99:     --num_triplets_per_epoch=10000
+100: 
+101: # ----------------------------------------------------------------------------
+102: # Config 3: wide_both
+103: # Both adapters big. High-capacity baseline; a likely winner if the model
+104: # just needs more parameters.
+105: # ----------------------------------------------------------------------------
+106: run_config wide_both \
+107:     --lr=5e-5 \
+108:     --epochs=5 \
+109:     --grad_accum_steps=32 \
+110:     --eval_interval=10 \
+111:     --lora_rank=64 \
+112:     --lora_alpha=128 \
+113:     --lora_dropout=0.05 \
+114:     --proj_mlp_lora_rank=32 \
+115:     --proj_mlp_lora_alpha=64 \
+116:     --proj_mlp_lora_dropout=0.0 \
+117:     --max_objects_per_sample=20 \
+118:     --num_triplets_per_epoch=10000
+119: 
+120: # ----------------------------------------------------------------------------
+121: # Config 4: wide_both_high_lr
+122: # Same capacity as wide_both with lr=1e-4. LoRA usually likes higher LR than
+123: # full fine-tuning; tests whether the baseline 5e-5 is leaving juice on the
+124: # table.
+125: # ----------------------------------------------------------------------------
+126: run_config wide_both_high_lr \
+127:     --lr=1e-4 \
+128:     --epochs=5 \
+129:     --grad_accum_steps=32 \
+130:     --eval_interval=10 \
+131:     --lora_rank=64 \
+132:     --lora_alpha=128 \
+133:     --lora_dropout=0.05 \
+134:     --proj_mlp_lora_rank=32 \
+135:     --proj_mlp_lora_alpha=64 \
+136:     --proj_mlp_lora_dropout=0.0 \
+137:     --max_objects_per_sample=20 \
+138:     --num_triplets_per_epoch=10000
+139: 
+140: # ----------------------------------------------------------------------------
+141: # Config 5: fat_objects
+142: # Trade adapter width for per-sample compute. 25 boxes/sample = 75 extra
+143: # decode steps per training example, exercising the KV cache and giving the
+144: # region head a lot of supervision per image.
+145: # ----------------------------------------------------------------------------
+146: run_config fat_objects \
+147:     --lr=5e-5 \
+148:     --epochs=5 \
+149:     --grad_accum_steps=32 \
+150:     --eval_interval=10 \
+151:     --lora_rank=48 \
+152:     --lora_alpha=96 \
+153:     --lora_dropout=0.05 \
+154:     --proj_mlp_lora_rank=24 \
+155:     --proj_mlp_lora_alpha=48 \
+156:     --proj_mlp_lora_dropout=0.0 \
+157:     --max_objects_per_sample=25 \
+158:     --num_triplets_per_epoch=10000
+159: 
+160: echo """"
+161: echo ""==========================================""
+162: echo ""Sweep complete.""
+163: echo ""Adapters under: ${ROOT_ARTIFACTS}""
+164: echo ""Figures under:  ${ROOT_PREDS}""
+165: echo ""==========================================""
+
+(End of file - total 165 lines)
+</content>
+
+assistant: Let me check the trainer to understand how validation/eval is handled.
+
+tool: /private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/visual_prompt_trainer.py
+
+tool: <path>/private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/visual_prompt_trainer.py</path>
+<type>file</type>
+<content>
+1: """"""
+2: Teacher-forced **visual-prompt** fine-tuning.
+3: 
+4: This mirrors ``sft_trainer.py`` but replaces the text ""object"" string in the
+5: ``detect`` template with a query image whose mean-pooled vision embedding gets
+6: spliced into the same prompt slot::
+7: 
+8:     [BOS, image patches] [detect prefix] [* mean_pool(vis_enc(query_crop)) *] [detect suffix]
+9:                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10:                        text path : tokenizer.encode("" "" + class_name)
+11:                        visual path: this trainer
+12: 
+13: Training-time supervision is identical to ``sft_trainer.py``: teacher-forced
+14: cross-entropy on the region head's coordinate / size bins for each GT box.
+15: 
+16: Trainable parameter set (v1):
+17: - LoRA on the text decoder layers (qkv, proj, fc1, fc2)
+18: - LoRA on the vision projection MLP (vision.proj_mlp.fc1, vision.proj_mlp.fc2)
+19:   — this is the only adapter on the path query_crop -> splice_position
+20: - Full fine-tune of model.region
+21: 
+22: The base ViT backbone is run under ``torch.no_grad()`` for both the target
+23: image (frozen) and the query crop (we only need gradients through the
+24: ``proj_mlp`` LoRA, so the encoder activations don't need to be retained).
+25: 
+26: Usage::
+27: 
+28:     python visual_prompt_trainer.py
+29:     python visual_prompt_trainer.py --hold_out_classes=False --num_triplets_per_epoch=5000
+30:     python visual_prompt_trainer.py --overfit_batch_size=8 --epochs=10 --eval_interval=1
+31: """"""
+32: 
+33: from __future__ import annotations
+34: 
+35: import logging
+36: import os
+37: from pathlib import Path
+38: from typing import Optional
+39: 
+40: from dotenv import load_dotenv
+41: 
+42: load_dotenv(Path(__file__).resolve().parent / "".env"")
+43: 
+44: import fire
+45: import matplotlib.pyplot as plt
+46: import torch
+47: import torch.nn.functional as F
+48: import wandb
+49: from matplotlib.patches import Rectangle
+50: from safetensors.torch import load_file, save_file
+51: from torch.optim import AdamW
+52: from tqdm import tqdm
+53: 
+54: from _datasets.lvis_visual_prompt_dataset import (
+55:     LVISVisualPrompting,
+56:     load_lvis_fo,
+57: )
+58: from moondream2.image_crops import reconstruct_from_crops
+59: from moondream2.moondream import MoondreamModel, MoondreamConfig
+60: from moondream2.moondream_functions import (
+61:     _decode_one_tok,
+62:     _prefill,
+63:     _vis_enc,
+64:     _vis_proj,
+65:     encode_image_grad,
+66: )
+67: from moondream2.region import (
+68:     decode_coordinate,
+69:     decode_size,
+70:     encode_coordinate,
+71:     encode_size,
+72: )
+73: from moondream2.rl_utils import match_boxes_score
+74: from moondream2.text import lm_head, text_encoder
+75: from moondream2.vision import prepare_crops
+76: from trainer_helpers import (
+77:     LoRALinear,
+78:     bin_to_size,
+79:     coord_to_bin,
+80:     get_lora_state_dict,
+81:     inject_lora_into_model,
+82:     lr_schedule,
+83:     size_to_bin,
+84: )
+85: 
+86: device = ""cuda"" if torch.cuda.is_available() else ""mps""
+87: 
+88: 
+89: # ============================================================================
+90: # LoRA on vision.proj_mlp
+91: # ============================================================================
+92: 
+93: 
+94: def inject_lora_into_proj_mlp(
+95:     model: MoondreamModel,
+96:     rank: int = 16,
+97:     alpha: float = 32,
+98:     dropout: float = 0.0,
+99: ) -> list[torch.nn.Parameter]:
+100:     """"""Wrap ``vision.proj_mlp.fc1`` and ``.fc2`` with ``LoRALinear`` in-place.
+101: 
+102:     The proj_mlp is the only piece of the model on the path
+103:     ``query_crop -> splice_position`` whose params get gradients in this trainer.
+104:     """"""
+105:     model_device = next(model.parameters()).device
+106:     lora_params: list[torch.nn.Parameter] = []
+107:     proj = model.vision.proj_mlp
+108:     for name in (""fc1"", ""fc2""):
+109:         original = getattr(proj, name)
+110:         lora_layer = LoRALinear(original, rank, alpha, dropout).to(model_device)
+111:         setattr(proj, name, lora_layer)
+112:         lora_params.extend([lora_layer.lora_A, lora_layer.lora_B])
+113:     logging.info(""Injected LoRA into vision.proj_mlp.fc1 / fc2"")
+114:     return lora_params
+115: 
+116: 
+117: # ============================================================================
+118: # Query-crop encoding (no_grad backbone, grad-enabled proj_mlp)
+119: # ============================================================================
+120: 
+121: 
+122: def _run_query_encoder(model: MoondreamModel, image) -> torch.Tensor:
+123:     """"""Project a (small) query image into the text decoder's input space.
+124: 
+125:     Equivalent to ``_run_vision_encoder`` but the heavy ViT backbone runs under
+126:     ``torch.no_grad()``. Gradients still flow back through ``proj_mlp`` (LoRA),
+127:     which is the only trainable path from the query.
+128:     """"""
+129:     with torch.no_grad():
+130:         all_crops, tiling = prepare_crops(image, model.config.vision, device=model.device)
+131:         outputs = _vis_enc(model, all_crops)
+132:         global_features = outputs[0].detach()
+133:         local_features = outputs[1:].detach().view(
+134:             -1,
+135:             model.config.vision.enc_n_layers,
+136:             model.config.vision.enc_n_layers,
+137:             model.config.vision.enc_dim,
+138:         )
+139:         reconstructed = reconstruct_from_crops(
+140:             local_features,
+141:             tiling,
+142:             patch_size=1,
+143:             overlap_margin=model.config.vision.overlap_margin,
+144:         )
+145:     return _vis_proj(model, global_features, reconstructed)  # (729, D), grads on proj_mlp
+146: 
+147: 
+148: def _query_emb_pooled(model: MoondreamModel, query_image) -> torch.Tensor:
+149:     """"""Mean-pool the query's projected patch tokens to a (1, 1, D) prompt slot.""""""
+150:     tokens = _run_query_encoder(model, query_image)        # (729, D)
+151:     # TODO: eventually try other methods of combining.
+152:     pooled = tokens.mean(dim=0, keepdim=True).unsqueeze(0)  # (1, 1, D)
+153:     return pooled
+154: 
+155: 
+156: # ============================================================================
+157: # Per-sample loss (mirrors teacher_forced_region_loss in sft_trainer.py)
+158: # ============================================================================
+159: 
+160: 
+161: def teacher_forced_visual_prompt_loss(
+162:     model: MoondreamModel,
+163:     query_crop,
+164:     target_image,
+165:     boxes: torch.Tensor,
+166:     max_objects: Optional[int] = None,
+167: ) -> torch.Tensor:
+168:     """"""Teacher-forced detection loss with the visual-prompt slot.
+169: 
+170:     Args:
+171:         model: Moondream 2 model.
+172:         query_crop: PIL image — single instance of the class to detect.
+173:         target_image: PIL image — image to detect that class in.
+174:         boxes: tensor of shape (N, 4), each [x_min, y_min, w, h] in [0, 1].
+175:         max_objects: cap on number of supervised GT boxes per call.
+176:     """"""
+177:     if boxes.numel() == 0:
+178:         return torch.zeros([], device=model.device)
+179: 
+180:     detect_template = model.config.tokenizer.templates[""detect""]
+181:     prefix_ids = detect_template[""prefix""]
+182:     suffix_ids = detect_template[""suffix""]
+183: 
+184:     # Target image is frozen — same as usual.
+185:     with torch.no_grad():
+186:         encoded_target = encode_image_grad(model, target_image, settings=None)
+187:     model.load_encoded_image(encoded_target)
+188:     pos = encoded_target.pos
+189: 
+190:     # Build the new visual-prompt embedding: [prefix_text, query_pooled, suffix_text].
+191:     pre = text_encoder(
+192:         torch.tensor([prefix_ids], device=model.device, dtype=torch.long), model.text
+193:     )
+194:     suf = text_encoder(
+195:         torch.tensor([suffix_ids], device=model.device, dtype=torch.long), model.text
+196:     )
+197:     q_pooled = _query_emb_pooled(model, query_crop)            # (1, 1, D), grads on
+198:     prompt_emb = torch.cat([pre, q_pooled, suf], dim=1)         # (1, L, D)
+199:     L = prompt_emb.size(1)
+200: 
+201:     mask = model.attn_mask[:, :, pos : pos + L, :]
+202:     pos_ids = torch.arange(pos, pos + L, device=model.device, dtype=torch.long)
+203:     hidden_BC = _prefill(model, prompt_emb, mask, pos_ids)      # (1, L, D)
+204:     pos = pos + L
+205:     hidden = hidden_BC[:, -1:, :]
+206: 
+207:     # Subsequent one-token decode steps use a 2048-wide causal mask.
+208:     step_mask = torch.zeros(1, 1, 2048, device=model.device, dtype=torch.bool)
+209:     step_mask[:, :, :pos] = 1
+210: 
+211:     n = boxes.size(0) if max_objects is None else min(boxes.size(0), max_objects)
+212:     total_loss = torch.zeros([], device=model.device)
+213:     n_terms = 0
+214: 
+215:     for obj_idx in range(n):
+216:         bb = boxes[obj_idx].to(model.device)
+217:         x_min, y_min, w_box, h_box = bb
+218:         x_center = torch.clamp(x_min + w_box / 2.0, 0.0, 1.0)
+219:         y_center = torch.clamp(y_min + h_box / 2.0, 0.0, 1.0)
+220: 
+221:         # ---- X bin CE ----
+222:         x_logits = decode_coordinate(hidden, model.region)
+223:         x_target = torch.tensor(
+224:             [coord_to_bin(float(x_center))], device=model.device, dtype=torch.long,
+225:         )
+226:         total_loss = total_loss + F.cross_entropy(
+227:             x_logits.view(-1, x_logits.size(-1)), x_target
+228:         )
+229:         n_terms += 1
+230: 
+231:         x_t = (
+232:             x_center.unsqueeze(0).unsqueeze(0).unsqueeze(-1).to(dtype=x_logits.dtype)
+233:         )
+234:         next_emb = encode_coordinate(x_t, model.region)
+235:         step_mask[:, :, pos] = 1
+236:         pos_ids = torch.tensor([pos], device=model.device, dtype=torch.long)
+237:         _, hidden = _decode_one_tok(model, next_emb, step_mask, pos_ids)
+238:         pos += 1
+239: 
+240:         # ---- Y bin CE ----
+241:         y_logits = decode_coordinate(hidden, model.region)
+242:         y_target = torch.tensor(
+243:             [coord_to_bin(float(y_center))], device=model.device, dtype=torch.long,
+244:         )
+245:         total_loss = total_loss + F.cross_entropy(
+246:             y_logits.view(-1, y_logits.size(-1)), y_target
+247:         )
+248:         n_terms += 1
+249: 
+250:         y_t = (
+251:             y_center.unsqueeze(0).unsqueeze(0).unsqueeze(-1).to(dtype=y_logits.dtype)
+252:         )
+253:         next_emb = encode_coordinate(y_t, model.region)
+254:         step_mask[:, :, pos] = 1
+255:         pos_ids = torch.tensor([pos], device=model.device, dtype=torch.long)
+256:         _, hidden = _decode_one_tok(model, next_emb, step_mask, pos_ids)
+257:         pos += 1
+258: 
+259:         # ---- Size (w, h) bin CE ----
+260:         size_logits = decode_size(hidden, model.region)         # (2, 1024)
+261:         w_bin = size_to_bin(float(w_box))
+262:         h_bin = size_to_bin(float(h_box))
+263:         total_loss = total_loss + F.cross_entropy(
+264:             size_logits[0].unsqueeze(0),
+265:             torch.tensor([w_bin], device=model.device, dtype=torch.long),
+266:         )
+267:         total_loss = total_loss + F.cross_entropy(
+268:             size_logits[1].unsqueeze(0),
+269:             torch.tensor([h_bin], device=model.device, dtype=torch.long),
+270:         )
+271:         n_terms += 2
+272: 
+273:         size_t = torch.tensor(
+274:             [bin_to_size(w_bin), bin_to_size(h_bin)],
+275:             device=model.device, dtype=size_logits.dtype,
+276:         )
+277:         next_emb = encode_size(size_t, model.region).unsqueeze(0).unsqueeze(0)
+278:         step_mask[:, :, pos] = 1
+279:         pos_ids = torch.tensor([pos], device=model.device, dtype=torch.long)
+280:         _, hidden = _decode_one_tok(model, next_emb, step_mask, pos_ids)
+281:         pos += 1
+282: 
+283:     return total_loss / max(n_terms, 1)
+284: 
+285: 
+286: # ============================================================================
+287: # Inference helper (visual-prompt detect, used during validation)
+288: # ============================================================================
+289: 
+290: 
+291: @torch.inference_mode()
+292: def detect_with_visual_prompt(
+293:     model: MoondreamModel,
+294:     target_image,
+295:     query_image,
+296:     max_objects: int = 25,
+297: ) -> list[dict]:
+298:     """"""Run detection using a query image as the prompt instead of a text label.
+299: 
+300:     Returns a list of {x_min, y_min, x_max, y_max} dicts in [0, 1] coords.
+301:     """"""
+302:     encoded = model.encode_image(target_image)
+303:     model.load_encoded_image(encoded)
+304: 
+305:     detect_template = model.config.tokenizer.templates[""detect""]
+306:     pre = text_encoder(
+307:         torch.tensor([detect_template[""prefix""]], device=model.device), model.text
+308:     )
+309:     suf = text_encoder(
+310:         torch.tensor([detect_template[""suffix""]], device=model.device), model.text
+311:     )
+312:     q_pooled = _query_emb_pooled(model, query_image)
+313:     prompt_emb = torch.cat([pre, q_pooled, suf], dim=1)
+314:     L = prompt_emb.size(1)
+315: 
+316:     pos = encoded.pos
+317:     mask = model.attn_mask[:, :, pos : pos + L, :]
+318:     pos_ids = torch.arange(pos, pos + L, device=model.device, dtype=torch.long)
+319:     hidden = _prefill(model, prompt_emb, mask, pos_ids)
+320:     logits = lm_head(hidden, model.text)
+321:     next_token = torch.argmax(logits, dim=-1).unsqueeze(1)
+322:     return model._generate_points(
+323:         hidden[:, -1:, :], next_token, pos + L,
+324:         include_size=True, max_objects=max_objects,
+325:     )
+326: 
+327: 
+328: # ============================================================================
+329: # Validation
+330: # ============================================================================
+331: 
+332: 
+333: def _xywh_to_corner_dict(box) -> dict:
+334:     x, y, w, h = float(box[0]), float(box[1]), float(box[2]), float(box[3])
+335:     return {""x_min"": x, ""y_min"": y, ""x_max"": x + w, ""y_max"": y + h}
+336: 
+337: 
+338: def _plot_vp_prediction(
+339:     query_crop, target_image, gt_dicts, pred_dicts, class_name, tp, fp, fn,
+340: ):
+341:     """"""Side-by-side figure: query crop on left, target with GT (green) + preds (magenta) on right.""""""
+342:     fig, (ax_q, ax_t) = plt.subplots(1, 2, figsize=(12, 6))
+343:     ax_q.imshow(query_crop)
+344:     ax_q.set_title(f""query: {class_name}"")
+345:     ax_q.axis(""off"")
+346: 
+347:     ax_t.imshow(target_image)
+348:     W, H = target_image.size
+349:     for b in gt_dicts:
+350:         ax_t.add_patch(Rectangle(
+351:             (b[""x_min""] * W, b[""y_min""] * H),
+352:             (b[""x_max""] - b[""x_min""]) * W, (b[""y_max""] - b[""y_min""]) * H,
+353:             fill=False, edgecolor=""lime"", linewidth=2, label=""GT"",
+354:         ))
+355:     for b in pred_dicts:
+356:         ax_t.add_patch(Rectangle(
+357:             (b[""x_min""] * W, b[""y_min""] * H),
+358:             (b[""x_max""] - b[""x_min""]) * W, (b[""y_max""] - b[""y_min""]) * H,
+359:             fill=False, edgecolor=""magenta"", linewidth=2, linestyle=""--"", label=""pred"",
+360:         ))
+361:     ax_t.set_title(
+362:         f""GT={len(gt_dicts)}  pred={len(pred_dicts)}  TP={tp}  FP={fp}  FN={fn}""
+363:     )
+364:     ax_t.axis(""off"")
+365:     plt.tight_layout()
+366:     return fig
+367: 
+368: 
+369: def validate_visual_prompt(
+370:     model: MoondreamModel,
+371:     val_ds: LVISVisualPrompting,
+372:     step: int,
+373:     max_samples: int = 250,
+374:     iou_threshold: float = 0.5,
+375:     max_plot_samples: int = 16,
+376:     log_to_wandb: bool = True,
+377:     predictions_dir: str = ""predictions"",
+378: ) -> dict:
+379:     """"""F1 / precision / recall against GT, using detect_with_visual_prompt.
+380: 
+381:     Also saves up to ``max_plot_samples`` side-by-side prediction figures into
+382:     ``predictions_dir`` and logs them to wandb under ``predictions/vp`` (when
+383:     ``log_to_wandb``).
+384:     """"""
+385:     model.eval()
+386:     os.makedirs(predictions_dir, exist_ok=True)
+387:     n = min(max_samples, len(val_ds))
+388:     TP = FP = FN = 0
+389:     images: list = []
+390:     with torch.no_grad():
+391:         for i in tqdm(range(n), desc=f""validate@step={step}"", leave=False):
+392:             sample = val_ds[i]
+393:             preds = detect_with_visual_prompt(
+394:                 model, sample[""target_image""], sample[""query_crop""],
+395:             )
+396:             gt_dicts = [_xywh_to_corner_dict(b) for b in sample[""boxes""]]
+397:             tp, fp, fn = match_boxes_score(preds, gt_dicts, iou_threshold=iou_threshold)
+398:             TP += tp; FP += fp; FN += fn
+399: 
+400:             if i < max_plot_samples:
+401:                 try:
+402:                     fig = _plot_vp_prediction(
+403:                         sample[""query_crop""], sample[""target_image""],
+404:                         gt_dicts, preds, sample[""class_name""], tp, fp, fn,
+405:                     )
+406:                     fig_path = os.path.join(
+407:                         predictions_dir, f""vp_step{step}_{i:03d}.png""
+408:                     )
+409:                     fig.savefig(fig_path, dpi=90, bbox_inches=""tight"")
+410:                     plt.close(fig)
+411:                     if log_to_wandb:
+412:                         images.append(wandb.Image(fig_path, caption=sample[""class_name""]))
+413:                 except Exception as e:
+414:                     logging.warning(f""failed to save prediction figure {i}: {e}"")
+415: 
+416:     if log_to_wandb and images:
+417:         try:
+418:             wandb.log({""predictions/vp"": images}, step=step)
+419:         except Exception as e:
+420:             logging.warning(f""failed to log prediction images to wandb: {e}"")
+421: 
+422:     model.train()
+423:     if torch.cuda.is_available():
+424:         torch.cuda.empty_cache()
+425: 
+426:     precision = TP / (TP + FP) if (TP + FP) else 0.0
+427:     recall = TP / (TP + FN) if (TP + FN) else 0.0
+428:     f1 = 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
+429:     return {""precision"": precision, ""recall"": recall, ""f1"": f1, ""tp"": TP, ""fp"": FP, ""fn"": FN}
+430: 
+431: 
+432: # ============================================================================
+433: # Main
+434: # ============================================================================
+435: 
+436: 
+437: def main(
+438:     lr: float = 5e-5,
+439:     epochs: int = 5,
+440:     grad_accum_steps: int = 64,
+441:     validation_samples: int = 250,
+442:     eval_interval: int = 5,
+443:     early_stopping_patience: int = 10,
+444:     val_plot_samples: int = 16,
+445:     overfit_batch_size: Optional[int] = None,
+446:     lora_rank: int = 32,
+447:     lora_alpha: int = 64,
+448:     lora_dropout: float = 0.1,
+449:     text_lora_targets: Optional[list] = None,
+450:     proj_mlp_lora_rank: int = 8,
+451:     proj_mlp_lora_alpha: int = 16,
+452:     proj_mlp_lora_dropout: float = 0.0,
+453:     max_objects_per_sample: int = 10,
+454:     # Dataset
+455:     dataset_name: str = ""Voxel51/LVIS"",
+456:     max_samples: int = 5000,
+457:     num_triplets_per_epoch: int = 10_000,
+458:     hold_out_classes: bool = True,
+459:     train_ratio: float = 0.9,
+460:     val_ratio: float = 0.05,
+461:     split_seed: int = 0,
+462:     # IO
+463:     model_path: str = ""moondream2/model.safetensors"",
+464:     wandb_project: str = ""moondream-visual-prompt-ft"",
+465:     run_name: Optional[str] = None,
+466:     artifact_dir: str = ""model_artifacts"",
+467:     predictions_dir: str = ""predictions"",
+468: ):
+469:     """"""Train Moondream 2 with visual prompts via LoRA on text decoder + proj_mlp.""""""
+470:     if text_lora_targets is None:
+471:         text_lora_targets = [""qkv"", ""proj"", ""fc1"", ""fc2""]
+472: 
+473:     logging.basicConfig(
+474:         level=logging.INFO,
+475:         format=""%(asctime)s - %(levelname)s - %(message)s"",
+476:     )
+477:     # Quiet noisy third-party loggers — httpx in particular spams a line per
+478:     # HTTP request during the first FiftyOne download, swamping training logs.
+479:     for noisy in (""httpx"", ""httpcore"", ""urllib3"", ""fiftyone""):
+480:         logging.getLogger(noisy).setLevel(logging.WARNING)
+481: 
+482:     os.makedirs(predictions_dir, exist_ok=True)
+483:     os.makedirs(artifact_dir, exist_ok=True)
+484:     logging.info(f""Artifact dir:    {artifact_dir}"")
+485:     logging.info(f""Predictions dir: {predictions_dir}"")
+486: 
+487:     wandb.init(
+488:         project=wandb_project,
+489:         name=run_name,
+490:         config=dict(
+491:             EPOCHS=epochs, GRAD_ACCUM_STEPS=grad_accum_steps, LR=lr,
+492:             VALIDATION_SAMPLES=validation_samples, EVAL_INTERVAL=eval_interval,
+493:             EARLY_STOPPING_PATIENCE=early_stopping_patience,
+494:             OVERFIT_BATCH_SIZE=overfit_batch_size,
+495:             LORA_RANK=lora_rank, LORA_ALPHA=lora_alpha, LORA_DROPOUT=lora_dropout,
+496:             TEXT_LORA_TARGETS=text_lora_targets,
+497:             PROJ_MLP_LORA_RANK=proj_mlp_lora_rank,
+498:             PROJ_MLP_LORA_ALPHA=proj_mlp_lora_alpha,
+499:             MAX_OBJECTS_PER_SAMPLE=max_objects_per_sample,
+500:             DATASET=dataset_name, MAX_SAMPLES=max_samples,
+501:             NUM_TRIPLETS_PER_EPOCH=num_triplets_per_epoch,
+502:             HOLD_OUT_CLASSES=hold_out_classes,
+503:             RUN_NAME=run_name,
+504:             ARTIFACT_DIR=artifact_dir,
+505:             PREDICTIONS_DIR=predictions_dir,
+506:             md_version=""2"", trainer=""visual_prompt_teacher_forced"",
+507:         ),
+508:     )
+509: 
+510:     # Build and load the base model.
+511:     model = MoondreamModel(config=MoondreamConfig(), setup_caches=True)
+512:     model.load_state_dict(load_file(model_path))
+513:     model.to(device)
+514:     for _, buf in model.named_buffers():
+515:         buf.data = buf.data.to(device)
+516: 
+517:     # Inject LoRA on the text decoder 
+518:     inject_lora_into_model(
+519:         model, rank=lora_rank, alpha=lora_alpha, dropout=lora_dropout,
+520:         target_modules=text_lora_targets,
+521:     )
+522:     # Inject LoRA on the vision.proj_mlp
+523:     inject_lora_into_proj_mlp(
+524:         model, rank=proj_mlp_lora_rank, alpha=proj_mlp_lora_alpha,
+525:         dropout=proj_mlp_lora_dropout,
+526:     )
+527: 
+528:     # Freeze everything, then re-enable: LoRA params + region head.
+529:     for p in model.parameters():
+530:         p.requires_grad = False
+531:     for module in model.modules():
+532:         if isinstance(module, LoRALinear):
+533:             module.lora_A.requires_grad = True
+534:             module.lora_B.requires_grad = True
+535:     for p in model.region.parameters(): 
+536:         p.requires_grad = True
+537: 
+538:     total_params = sum(p.numel() for p in model.parameters())
+539:     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+540:     logging.info(f""Total parameters:    {total_params:,}"")
+541:     logging.info(f""Trainable params:    {trainable_params:,}"")
+542:     logging.info(f""Trainable ratio:     {100 * trainable_params / total_params:.3f}%"")
+543: 
+544:     optimizer = AdamW(
+545:         [{""params"": [p for p in model.parameters() if p.requires_grad]}], lr=lr,
+546:     )
+547: 
+548:     # Datasets — load the FiftyOne dataset *once* and share it across splits.
+549:     fo_dataset = load_lvis_fo(dataset_name, max_samples=max_samples)
+550:     common = dict(
+551:         dataset_name=dataset_name, max_samples=max_samples,
+552:         hold_out_classes=hold_out_classes, train_ratio=train_ratio,
+553:         val_ratio=val_ratio, split_seed=split_seed,
+554:         fo_dataset=fo_dataset,
+555:     )
+556:     train_ds = LVISVisualPrompting(
+557:         split=""train"", num_triplets_per_epoch=num_triplets_per_epoch, **common,
+558:     )
+559:     val_ds = LVISVisualPrompting(
+560:         split=""val"", num_triplets_per_epoch=validation_samples, **common,
+561:     )
+562:     test_ds = LVISVisualPrompting(
+563:         split=""test"", num_triplets_per_epoch=validation_samples, **common,
+564:     )
+565: 
+566:     if overfit_batch_size is not None and overfit_batch_size > 0:
+567:         logging.info(
+568:             f""Overfit mode: training and validating on the first ""
+569:             f""{overfit_batch_size} sampled triplets.""
+570:         )
+571:         train_ds.num_triplets = overfit_batch_size
+572:         val_ds.num_triplets = overfit_batch_size
+573:         test_ds.num_triplets = overfit_batch_size
+574: 
+575:     logging.info(f""Train classes: {len(train_ds.classes)} (split={train_ds.split})"")
+576:     logging.info(f""Val   classes: {len(val_ds.classes)} (split={val_ds.split})"")
+577:     logging.info(f""Test  classes: {len(test_ds.classes)} (split={test_ds.split})"")
+578:     if hold_out_classes:
+579:         overlap = set(train_ds.classes) & set(val_ds.classes)
+580:         if overlap:
+581:             logging.warning(f""train/val class overlap (should be empty): {len(overlap)}"")
+582: 
+583:     # Initial validation (on novel classes if hold_out_classes=True).
+584:     initial = validate_visual_prompt(
+585:         model, val_ds, step=0, max_samples=validation_samples,
+586:         max_plot_samples=val_plot_samples,
+587:         predictions_dir=predictions_dir,
+588:     )
+589:     best_f1 = initial[""f1""]
+590:     best_step = 0
+591:     logging.info(f""Initial val f1: {initial['f1']:.4f}  (P={initial['precision']:.3f}, R={initial['recall']:.3f})"")
+592:     wandb.log(
+593:         {f""initial/{k}"": v for k, v in initial.items()},
+594:         step=0,
+595:     )
+596: 
+597:     total_steps = max(1, epochs * len(train_ds) // grad_accum_steps)
+598:     pbar = tqdm(total=total_steps)
+599: 
+600:     model.train()
+601:     i = 0
+602:     accum_loss_sum = 0.0
+603:     accum_loss_n = 0
+604:     evals_without_improvement = 0
+605:     should_stop = False
+606:     for epoch in range(epochs):
+607:         for sample in train_ds:
+608:             i += 1
+609:             loss = teacher_forced_visual_prompt_loss(
+610:                 model,
+611:                 sample[""query_crop""],
+612:                 sample[""target_image""],
+613:                 sample[""boxes""],
+614:                 max_objects=max_objects_per_sample,
+615:             )
+616:             (loss / grad_accum_steps).backward()
+617:             accum_loss_sum += float(loss.item())
+618:             accum_loss_n += 1
+619: 
+620:             if i % grad_accum_steps == 0:
+621:                 optimizer.step()
+622:                 optimizer.zero_grad()
+623: 
+624:                 step = i // grad_accum_steps
+625:                 lr_val = lr_schedule(step, total_steps, base_lr=lr)
+626:                 for pg in optimizer.param_groups:
+627:                     pg[""lr""] = lr_val
+628: 
+629:                 avg_loss = accum_loss_sum / max(accum_loss_n, 1)
+630:                 accum_loss_sum, accum_loss_n = 0.0, 0
+631:                 pbar.set_postfix({""step"": step, ""loss"": f""{avg_loss:.4f}""})
+632:                 pbar.update(1)
+633:                 wandb.log(
+634:                     {""loss/train"": avg_loss, ""lr"": lr_val, ""epoch"": epoch},
+635:                     step=step,
+636:                 )
+637: 
+638:                 if step % eval_interval == 0 and step > 0:
+639:                     val = validate_visual_prompt(
+640:                         model, val_ds, step=step, max_samples=validation_samples,
+641:                         max_plot_samples=val_plot_samples,
+642:                         predictions_dir=predictions_dir,
+643:                     )
+644:                     logging.info(
+645:                         f""step={step}  val f1={val['f1']:.4f}  ""
+646:                         f""P={val['precision']:.3f}  R={val['recall']:.3f}""
+647:                     )
+648:                     wandb.log(
+649:                         {f""val/{k}"": v for k, v in val.items()},
+650:                         step=step,
+651:                     )
+652: 
+653:                     if val[""f1""] > best_f1:
+654:                         best_f1 = val[""f1""]
+655:                         best_step = step
+656:                         evals_without_improvement = 0
+657:                         save_file(
+658:                             get_lora_state_dict(model, include_region=True),
+659:                             os.path.join(
+660:                                 artifact_dir,
+661:                                 f""moondream_visual_prompt_lora_step_{step}.safetensors"",
+662:                             ),
+663:                         )
+664:                         logging.info(
+665:                             f""saved best LoRA+region adapter at step {step} (f1={best_f1:.4f})""
+666:                         )
+667:                     else:
+668:                         evals_without_improvement += 1
+669:                         logging.info(
+670:                             f""no f1 improvement for ""
+671:                             f""{evals_without_improvement}/{early_stopping_patience} ""
+672:                             f""evals (best f1={best_f1:.4f} @ step {best_step})""
+673:                         )
+674:                         if evals_without_improvement >= early_stopping_patience:
+675:                             logging.info(
+676:                                 f""early stopping at step {step}: ""
+677:                                 f""f1 has not improved for ""
+678:                                 f""{early_stopping_patience} consecutive evaluations""
+679:                             )
+680:                             should_stop = True
+681:                             break
+682: 
+683:                     wandb.log(
+684:                         {""val/evals_without_improvement"": evals_without_improvement},
+685:                         step=step,
+686:                     )
+687: 
+688:         if should_stop:
+689:             break
+690:     pbar.close()
+691: 
+692:     if should_stop:
+693:         wandb.run.summary[""early_stopped""] = True
+694:         wandb.run.summary[""early_stopped_at_step""] = best_step + (
+695:             evals_without_improvement * eval_interval
+696:         )
+697: 
+698:     # Reload best, run on test split.
+699:     if best_step > 0:
+700:         path = os.path.join(
+701:             artifact_dir, f""moondream_visual_prompt_lora_step_{best_step}.safetensors""
+702:         )
+703:         model.load_state_dict(load_file(path), strict=False)
+704:         logging.info(f""loaded best adapter from {path}"")
+705: 
+706:     model.eval()
+707:     test = validate_visual_prompt(
+708:         model, test_ds, step=best_step, max_samples=validation_samples,
+709:         max_plot_samples=val_plot_samples,
+710:         predictions_dir=predictions_dir,
+711:     )
+712:     logging.info(f""test f1 (best step {best_step}): {test['f1']:.4f}"")
+713:     wandb.log({f""test/{k}"": v for k, v in test.items()}, step=best_step + 1, commit=True)
+714:     wandb.run.summary[""test/f1""] = test[""f1""]
+715:     wandb.run.summary[""test/precision""] = test[""precision""]
+716:     wandb.run.summary[""test/recall""] = test[""recall""]
+717:     wandb.run.summary[""best_validation_step""] = best_step
+718: 
+719:     final_path = os.path.join(
+720:         artifact_dir, ""moondream_visual_prompt_lora_finetune.safetensors""
+721:     )
+722:     save_file(
+723:         get_lora_state_dict(model, include_region=True),
+724:         final_path,
+725:     )
+726:     logging.info(f""saved final adapter to {final_path}"")
+727:     wandb.finish()
+728: 
+729: 
+730: if __name__ == ""__main__"":
+731:     fire.Fire(main)
+
+(End of file - total 731 lines)
+</content>
+
+assistant: Now let me check the dataset class to understand how `hold_out_classes` splits work.
+
+tool: <path>/private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/_datasets/lvis_visual_prompt_dataset.py</path>
+<type>file</type>
+<content>
+1: """"""
+2: LVIS-based visual-prompting dataset.
+3: 
+4: Each ``__getitem__`` samples a triplet on the fly:
+5: 
+6: - ``query_crop``: PIL.Image cropped to one bounding box of a chosen class
+7: - ``target_image``: a *different* image that contains >=1 instance of the same class
+8: - ``boxes``: tensor (N, 4) of all GT [x_min, y_min, w, h] boxes for that class
+9:   in ``target_image``, normalized to [0, 1]
+10: - ``class_name``: str (used for logging only; the model never sees the label)
+11: 
+12: Two split modes via ``hold_out_classes``:
+13: 
+14: - ``False``: split images of the same class pool — vanilla ""new images, seen classes""
+15: - ``True``:  split *classes* themselves — the interesting ""novel-class"" eval
+16: 
+17: The dataset uses FiftyOne to fetch ``Voxel51/LVIS``, but only during ``__init__``;
+18: ``__getitem__`` reads file paths and pre-extracted bboxes from in-memory dicts.
+19: """"""
+20: 
+21: from __future__ import annotations
+22: 
+23: import random
+24: from typing import Optional
+25: 
+26: import torch
+27: from PIL import Image
+28: from torch.utils.data import Dataset
+29: 
+30: import fiftyone as fo
+31: import fiftyone.utils.huggingface as fouh
+32: 
+33: 
+34: def load_lvis_fo(
+35:     dataset_name: str = ""Voxel51/LVIS"",
+36:     max_samples: int = 5000,
+37: ) -> ""fo.Dataset"":
+38:     """"""Idempotent loader: re-uses an existing FiftyOne dataset of the same name
+39:     if one is already registered, otherwise downloads from the Hub.
+40: 
+41:     FiftyOne refuses to create two datasets with the same name and only
+42:     silently falls back to the cached one when ``overwrite=False`` AND the
+43:     download dir is reused — instantiating ``LVISVisualPrompting`` multiple
+44:     times in a single process would otherwise crash with::
+45: 
+46:         ValueError: Dataset name 'Voxel51/LVIS' is not available
+47:     """"""
+48:     if fo.dataset_exists(dataset_name):
+49:         return fo.load_dataset(dataset_name)
+50:     return fouh.load_from_hub(
+51:         dataset_name, max_samples=max_samples, overwrite=False,
+52:     )
+53: 
+54: 
+55: class LVISVisualPrompting(Dataset):
+56:     def __init__(
+57:         self,
+58:         split: str = ""train"",
+59:         dataset_name: str = ""Voxel51/LVIS"",
+60:         max_samples: int = 5000,
+61:         num_triplets_per_epoch: int = 10_000,
+62:         hold_out_classes: bool = True,
+63:         train_ratio: float = 0.9,
+64:         val_ratio: float = 0.05,
+65:         split_seed: int = 0,
+66:         sampling_seed: int = 0,
+67:         min_distinct_images_per_class: int = 2,
+68:         fo_dataset: Optional[""fo.Dataset""] = None,
+69:     ):
+70:         """"""If ``fo_dataset`` is provided, it is used directly (avoiding repeated
+71:         Hub loads when constructing multiple splits). Otherwise we look up the
+72:         named dataset in the local FiftyOne registry, falling back to a Hub
+73:         download. Both paths share the same underlying samples — only the
+74:         in-memory split indices differ between train/val/test.
+75:         """"""
+76:         assert split in {""train"", ""val"", ""test""}, f""unknown split: {split}""
+77: 
+78:         if fo_dataset is None:
+79:             fo_dataset = load_lvis_fo(dataset_name, max_samples=max_samples)
+80: 
+81:         # Build an in-memory index so __getitem__ never touches FiftyOne.
+82:         # images_by_sid[sid] = {""filepath"": str, ""dets"": [(label, [x,y,w,h]), ...]}
+83:         images_by_sid: dict[str, dict] = {}
+84:         for sample in fo_dataset.iter_samples():
+85:             dets = sample.detections.detections if sample.detections is not None else None
+86:             if not dets:
+87:                 continue
+88:             images_by_sid[sample.id] = {
+89:                 ""filepath"": sample.filepath,
+90:                 ""dets"": [(d.label, list(d.bounding_box)) for d in dets],
+91:             }
+92: 
+93:         if hold_out_classes:
+94:             # First gather all classes across all images.
+95:             class_to_locs_full: dict[str, list[tuple[str, int]]] = {}
+96:             for sid, info in images_by_sid.items():
+97:                 for j, (label, _) in enumerate(info[""dets""]):
+98:                     class_to_locs_full.setdefault(label, []).append((sid, j))
+99: 
+100:             eligible = sorted(
+101:                 c for c, locs in class_to_locs_full.items()
+102:                 if len({sid for sid, _ in locs}) >= min_distinct_images_per_class
+103:             )
+104: 
+105:             rng = random.Random(split_seed)
+106:             shuffled = list(eligible)
+107:             rng.shuffle(shuffled)
+108:             n = len(shuffled)
+109:             n_tr = int(n * train_ratio)
+110:             n_va = int(n * val_ratio)
+111:             class_slices = {
+112:                 ""train"": shuffled[:n_tr],
+113:                 ""val"": shuffled[n_tr : n_tr + n_va],
+114:                 ""test"": shuffled[n_tr + n_va :],
+115:             }
+116:             keep_classes = set(class_slices[split])
+117: 
+118:             self.class_to_locs = {
+119:                 c: locs for c, locs in class_to_locs_full.items() if c in keep_classes
+120:             }
+121:             # Keep only images that contain at least one kept-class detection.
+122:             self.images_by_sid = {
+123:                 sid: info
+124:                 for sid, info in images_by_sid.items()
+125:                 if any(label in keep_classes for label, _ in info[""dets""])
+126:             }
+127:         else:
+128:             # Split by image id; each image lives in exactly one of train/val/test.
+129:             rng = random.Random(split_seed)
+130:             sids = sorted(images_by_sid)
+131:             rng.shuffle(sids)
+132:             n = len(sids)
+133:             n_tr = int(n * train_ratio)
+134:             n_va = int(n * val_ratio)
+135:             sid_slices = {
+136:                 ""train"": sids[:n_tr],
+137:                 ""val"": sids[n_tr : n_tr + n_va],
+138:                 ""test"": sids[n_tr + n_va :],
+139:             }
+140:             keep_sids = set(sid_slices[split])
+141: 
+142:             self.images_by_sid = {
+143:                 sid: info for sid, info in images_by_sid.items() if sid in keep_sids
+144:             }
+145:             class_to_locs: dict[str, list[tuple[str, int]]] = {}
+146:             for sid, info in self.images_by_sid.items():
+147:                 for j, (label, _) in enumerate(info[""dets""]):
+148:                     class_to_locs.setdefault(label, []).append((sid, j))
+149:             # Re-filter: need >=2 distinct images of each class in this split.
+150:             self.class_to_locs = {
+151:                 c: locs for c, locs in class_to_locs.items()
+152:                 if len({sid for sid, _ in locs}) >= min_distinct_images_per_class
+153:             }
+154: 
+155:         self.classes = sorted(self.class_to_locs)
+156:         if not self.classes:
+157:             raise RuntimeError(
+158:                 f""No eligible classes in split={split!r}. ""
+159:                 f""Try lowering min_distinct_images_per_class or raising max_samples.""
+160:             )
+161: 
+162:         self.num_triplets = num_triplets_per_epoch
+163:         self.split = split
+164:         self.hold_out_classes = hold_out_classes
+165:         # Seed used to spice up per-index rngs so different epochs see different draws.
+166:         self._epoch_salt = sampling_seed
+167: 
+168:     def __len__(self) -> int:
+169:         return self.num_triplets
+170: 
+171:     def _sample_triplet(self, idx: int) -> dict:
+172:         # Per-index deterministic rng — reproducible & DataLoader-worker-safe.
+173:         rng = random.Random((idx + 1) * 2654435761 ^ self._epoch_salt)
+174: 
+175:         cls = rng.choice(self.classes)
+176:         locs = self.class_to_locs[cls]
+177:         distinct_sids = list({sid for sid, _ in locs})
+178:         q_sid, t_sid = rng.sample(distinct_sids, 2)
+179:         q_j = rng.choice([j for sid, j in locs if sid == q_sid])
+180: 
+181:         q_info = self.images_by_sid[q_sid]
+182:         q_img = Image.open(q_info[""filepath""]).convert(""RGB"")
+183:         qx, qy, qw, qh = q_info[""dets""][q_j][1]
+184:         W, H = q_img.size
+185:         query_crop = q_img.crop(
+186:             (qx * W, qy * H, (qx + qw) * W, (qy + qh) * H)
+187:         )
+188: 
+189:         t_info = self.images_by_sid[t_sid]
+190:         t_img = Image.open(t_info[""filepath""]).convert(""RGB"")
+191:         boxes = [bb for label, bb in t_info[""dets""] if label == cls]
+192: 
+193:         return {
+194:             ""query_crop"": query_crop,
+195:             ""target_image"": t_img,
+196:             ""boxes"": torch.tensor(boxes, dtype=torch.float32),
+197:             ""class_name"": cls,
+198:         }
+199: 
+200:     def __getitem__(self, idx: int) -> dict:
+201:         return self._sample_triplet(idx)
+
+(End of file - total 201 lines)
+</content>"

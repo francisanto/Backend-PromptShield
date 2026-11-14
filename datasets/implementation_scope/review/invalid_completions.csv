@@ -1,0 +1,2955 @@
+row_id,error_type,error_details,format,enhanced_prompt,enhanced_completion
+13,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),raw_json,"Hey, need to tweak our eval runner. We're testing some new steering coeffs and wanna crank up the randomness a bit. Where exactly do i change the attempts per prompt count? Also the temp settings for the local vllm models are locked at 0.0 right now -- which file handles that so i can make it more stochastic? And if i need to add a new model provider to the list, where does that logic live?","Here are the specific files and lines you need to modify for those changes:
+
+**1. Increase Attempts Per Prompt**
+You need to edit the experiment script you are running, not the core library (unless you want to change the default for everything).
+- **File:** `experiments/AGI-1677-pvi-models-baseline/run_eval.py` (or whichever experiment folder you are using)
+- **Line 15:** Look for `ATTEMPTS_PER_PROMPT = 50`. Change `50` to your desired number.
+- **Line 29:** Ensure this variable is passed to the function: `run_eval(..., samples_per_prompt=ATTEMPTS_PER_PROMPT)`.
+
+If you want to change the global default instead, edit `src/evaluations/adl/runner.py` at **line 31** in the function definition: `samples_per_prompt: int = 1`.
+
+**2. Adjust Sampling Temperature (Randomness)**
+The temperature for local models is hardcoded in the provider implementation.
+- **File:** `src/evaluations/llm/providers.py`
+- **Lines 109-115:** Inside the `generate_local` function, find the `SamplingParams` block.
+- **Change:** Set `temperature=0.0` to something higher (e.g., `0.7` or `1.0`) to increase randomness. You might also want to lower `top_p` from `1.0` to `0.9` for more diverse sampling.
+
+*Note:* This only affects local vLLM models. If you are using API models (Grok, Gemini, Claude), you need to add the temperature parameter to their specific generate functions (lines 24-73) as they don't use the vLLM `SamplingParams` object.
+
+**3. Add a New Model Provider**
+The routing logic that decides which function to call based on the model name string lives in the same provider file.
+- **File:** `src/evaluations/llm/providers.py`
+- **Lines 123-134:** The `run_llm_generate` function checks prefixes like `if model_id.startswith(""gpt""):`.
+- **Action:** 
+    1. Create a new function (e.g., `generate_new_provider`) near the top of the file.
+    2. Add a new `elif` condition in `run_llm_generate` to route your new model prefix to that function.
+    3. Don't forget to add any necessary API keys to your `.env` file (usually located at `src/persona_vectors/.env` or `src/evaluations/.env`)."
+30,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"I need to build a Python client for the Snowflake SQL API v2 that handles async query execution properly. The main thing is managing the polling logic when we get a 202 response, handling timeouts (408), and making sure we retry with the same request ID if the connection drops. Can you sketch out the core runner class and how it deals with the statement handle and partitioned results? Keep it stdlib only if possible, no external SDKs.","Here is a sketch of a stdlib-only Python runner for the Snowflake SQL API v2 that handles async execution, polling, timeouts, and idempotent retries.
+
+### Core Concepts
+1.  **Idempotency**: Use a UUID `request_id` for every submission. If a network error occurs, resubmit with `retry=true` and the same ID.
+2.  **Async Flow**: If the POST returns `202 Accepted`, extract the `statementHandle` and `statementStatusUrl`.
+3.  **Polling**: Poll the status URL until you get `200 OK` (success) or `422` (failure). Handle `408 Request Timeout` by continuing to poll using the handle.
+4.  **Partitions**: Once successful, check `resultSetMetaData.partitionInfo`. Fetch additional partitions via `GET /statements/{handle}?partition=N`.
+
+### Implementation Sketch
+
+```python
+import http.client
+import json
+import uuid
+import time
+from typing import Optional, Dict, Any, List
+
+class SnowflakeSqlRunner:
+    def __init__(self, account: str, token: str):
+        self.host = f""{account}.snowflakecomputing.com""
+        self.token = token
+        self.base_path = ""/api/v2/statements""
+
+    def _headers(self) -> Dict[str, str]:
+        return {
+            ""Authorization"": f""Bearer {self.token}"",
+            ""Content-Type"": ""application/json"",
+            ""Accept"": ""application/json"",
+            ""User-Agent"": ""MyApp/1.0""
+        }
+
+    def submit_query(self, sql: str, params: Optional[Dict] = None) -> Dict[str, Any]:
+        request_id = str(uuid.uuid4())
+        payload = {
+            ""statement"": sql,
+            ""bindings"": params or {}
+        }
+        
+        # Initial submission
+        return self._request(""POST"", self.base_path, payload, request_id, retry=False)
+
+    def _request(self, method: str, path: str, payload: Optional[Dict] = None, 
+                 request_id: Optional[str] = None, retry: bool = False, 
+                 handle: Optional[str] = None) -> Dict[str, Any]:
+        
+        url = path
+        if request_id:
+            sep = ""&"" if ""?"" in url else ""?""
+            url += f""{sep}requestId={request_id}""
+            if retry:
+                url += ""&retry=true""
+        if handle:
+            # For status checks or partition fetches, handle is part of path or query
+            pass 
+
+        conn = http.client.HTTPSConnection(self.host)
+        body = json.dumps(payload) if payload else None
+        
+        try:
+            conn.request(method, url, body=body, headers=self._headers())
+            resp = conn.getresponse()
+            data = json.loads(resp.read().decode())
+            
+            if resp.status == 200:
+                return {""status"": ""success"", ""data"": data}
+            elif resp.status == 202:
+                # Async in progress
+                return {""status"": ""running"", ""handle"": data.get(""statementHandle""), 
+                        ""status_url"": data.get(""statementStatusUrl"")}
+            elif resp.status == 408:
+                # Timeout, but we still have a handle to poll
+                return {""status"": ""timeout"", ""handle"": data.get(""statementHandle"")}
+            elif resp.status == 422:
+                return {""status"": ""failed"", ""error"": data}
+            else:
+                return {""status"": ""error"", ""code"": resp.status, ""detail"": data}
+        except Exception as e:
+            # Network drop: caller should retry with same request_id
+            raise ConnectionError(f""Network failure, retry with id {request_id}: {e}"")
+        finally:
+            conn.close()
+
+    def poll_until_complete(self, status_url: str, handle: str, timeout: int = 300) -> Dict[str, Any]:
+        start = time.time()
+        while time.time() - start < timeout:
+            # Poll the status URL
+            # Note: In real impl, construct full URL from status_url or use handle
+            result = self._request(""GET"", f""/api/v2/statements/{handle}"")
+            
+            if result[""status""] == ""success"":
+                return result
+            elif result[""status""] == ""failed"":
+                return result
+            elif result[""status""] == ""timeout"":
+                # Keep polling
+                time.sleep(2)
+                continue
+            else:
+                time.sleep(2)
+        
+        return {""status"": ""error"", ""message"": ""Polling timeout exceeded""}
+
+    def fetch_partitions(self, handle: str, metadata: Dict) -> List[List[Any]]:
+        all_rows = []
+        # Add initial data if present
+        if ""data"" in metadata:
+            all_rows.extend(metadata[""data""])
+        
+        partitions = metadata.get(""resultSetMetaData"", {}).get(""partitionInfo"", [])
+        for i in range(1, len(partitions)):
+            # Fetch partition N
+            path = f""/api/v2/statements/{handle}?partition={i}""
+            resp = self._request(""GET"", path)
+            if resp[""status""] == ""success"" and ""data"" in resp[""data""]:
+                all_rows.extend(resp[""data""][""data""])
+        
+        return all_rows
+```
+
+### Usage Pattern
+
+```python
+runner = SnowflakeSqlRunner(""myaccount"", ""my_jwt_token"")
+
+# 1. Submit
+resp = runner.submit_query(""SELECT COUNT(*) FROM large_table"")
+
+if resp[""status""] == ""running"":
+    # 2. Poll
+    final = runner.poll_until_complete(resp[""status_url""], resp[""handle""])
+    
+    if final[""status""] == ""success"":
+        # 3. Fetch extra partitions if needed
+        rows = runner.fetch_partitions(resp[""handle""], final[""data""])
+        print(f""Total rows: {len(rows)}"")
+    elif final[""status""] == ""failed"":
+        print(""Query failed:"", final[""error""])
+elif resp[""status""] == ""success"":
+    print(""Sync complete:"", resp[""data""])
+```
+
+This approach avoids external dependencies, strictly follows the REST contract (handling 202/408/422), and ensures idempotency via the `request_id` mechanism."
+82,schema_mismatch_missing_fields,"Missing required fields: ['primary_scope', 'frontend_required', 'backend_required', 'database_required', 'api_required', 'authentication_required', 'external_integration_required', 'design_emphasis', 'complexity', 'task_intent', 'frontend_evidence', 'backend_evidence', 'database_evidence', 'api_evidence', 'authentication_evidence', 'integration_evidence']; Keys present: ['contentTypes']",raw_json,"Hey, need to sketch out a NoSQL data model for a todo app backend. We got Users, Projects, Todos, Labels, and Comments. Users own stuff and can be in Teams. Projects belong to a User or Team. Todos have deadlines, priority, status, and can be tagged with multiple Labels (many-to-many thing). Also need Comments on Todos.
+
+Can you whip up a JSON schema for this? Include fields for relationships like many-to-many junctions if needed. If the description is too vague or missing key info to make a solid model, just return a JSON with a ""message"" saying you can't do it and why. Don't halluncinate fields if they ain't implied.
+
+Here's the rough breakdown:
+- User: auth info, owns Projects/Todos, member of Teams.
+- Project: collection of Todos, owned by User or linked to Team.
+- Todo: task with title, desc, deadline, priority, status. Assigned to User/Team, belongs to Project.
+- Label: tags for Todos, many-to-many.
+- Comment: text on a Todo, by a User.
+
+Make sure the relationships make sense for a scalable app.","{
+  ""contentTypes"": [
+    {
+      ""name"": ""User"",
+      ""description"": ""Represents the person using the application. Handles ownership and authentication context."",
+      ""fields"": [
+        {
+          ""name"": ""userId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""unique"": true,
+          ""description"": ""Primary key""
+        },
+        {
+          ""name"": ""username"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""unique"": true
+        },
+        {
+          ""name"": ""email"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""unique"": true
+        },
+        {
+          ""name"": ""passwordHash"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""hidden"": true,
+          ""description"": ""Inferred for authentication security""
+        },
+        {
+          ""name"": ""createdAt"",
+          ""type"": ""date"",
+          ""required"": true
+        }
+      ]
+    },
+    {
+      ""name"": ""Team"",
+      ""description"": ""Represents a group of users. Inferred from requirements for team-based project ownership."",
+      ""fields"": [
+        {
+          ""name"": ""teamId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""unique"": true
+        },
+        {
+          ""name"": ""name"",
+          ""type"": ""string"",
+          ""required"": true
+        },
+        {
+          ""name"": ""ownerId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""relation"": ""User"",
+          ""description"": ""User who created the team""
+        },
+        {
+          ""name"": ""createdAt"",
+          ""type"": ""date"",
+          ""required"": true
+        }
+      ]
+    },
+    {
+      ""name"": ""TeamMember"",
+      ""description"": ""Junction collection to manage many-to-many relationship between Users and Teams."",
+      ""fields"": [
+        {
+          ""name"": ""userId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""relation"": ""User""
+        },
+        {
+          ""name"": ""teamId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""relation"": ""Team""
+        },
+        {
+          ""name"": ""role"",
+          ""type"": ""string"",
+          ""required"": false,
+          ""default"": ""member""
+        }
+      ]
+    },
+    {
+      ""name"": ""Project"",
+      ""description"": ""Represents a collection of related Todos. Can belong to a User or a Team."",
+      ""fields"": [
+        {
+          ""name"": ""projectId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""unique"": true
+        },
+        {
+          ""name"": ""name"",
+          ""type"": ""string"",
+          ""required"": true
+        },
+        {
+          ""name"": ""description"",
+          ""type"": ""string"",
+          ""required"": false
+        },
+        {
+          ""name"": ""ownerId"",
+          ""type"": ""string"",
+          ""required"": false,
+          ""relation"": ""User"",
+          ""description"": ""User who created/owns the project""
+        },
+        {
+          ""name"": ""teamId"",
+          ""type"": ""string"",
+          ""required"": false,
+          ""relation"": ""Team"",
+          ""description"": ""Team associated with the project""
+        },
+        {
+          ""name"": ""createdAt"",
+          ""type"": ""date"",
+          ""required"": true
+        }
+      ]
+    },
+    {
+      ""name"": ""Todo"",
+      ""description"": ""Represents an individual task with various properties and relationships."",
+      ""fields"": [
+        {
+          ""name"": ""todoId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""unique"": true
+        },
+        {
+          ""name"": ""title"",
+          ""type"": ""string"",
+          ""required"": true
+        },
+        {
+          ""name"": ""description"",
+          ""type"": ""string"",
+          ""required"": false
+        },
+        {
+          ""name"": ""deadline"",
+          ""type"": ""date"",
+          ""required"": false
+        },
+        {
+          ""name"": ""priority"",
+          ""type"": ""enum"",
+          ""options"": [""low"", ""medium"", ""high"", ""urgent""],
+          ""required"": true,
+          ""default"": ""medium""
+        },
+        {
+          ""name"": ""status"",
+          ""type"": ""enum"",
+          ""options"": [""pending"", ""in_progress"", ""completed"", ""archived""],
+          ""required"": true,
+          ""default"": ""pending""
+        },
+        {
+          ""name"": ""creatorId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""relation"": ""User""
+        },
+        {
+          ""name"": ""assigneeId"",
+          ""type"": ""string"",
+          ""required"": false,
+          ""relation"": ""User""
+        },
+        {
+          ""name"": ""projectId"",
+          ""type"": ""string"",
+          ""required"": false,
+          ""relation"": ""Project""
+        },
+        {
+          ""name"": ""createdAt"",
+          ""type"": ""date"",
+          ""required"": true
+        },
+        {
+          ""name"": ""updatedAt"",
+          ""type"": ""date"",
+          ""required"": true
+        }
+      ]
+    },
+    {
+      ""name"": ""Label"",
+      ""description"": ""Represents a tag that can be attached to one or more Todos for categorization."",
+      ""fields"": [
+        {
+          ""name"": ""labelId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""unique"": true
+        },
+        {
+          ""name"": ""name"",
+          ""type"": ""string"",
+          ""required"": true
+        },
+        {
+          ""name"": ""color"",
+          ""type"": ""string"",
+          ""required"": false,
+          ""description"": ""Hex code for label color""
+        },
+        {
+          ""name"": ""ownerId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""relation"": ""User""
+        }
+      ]
+    },
+    {
+      ""name"": ""TodoLabel"",
+      ""description"": ""Junction collection to manage many-to-many relationship between Todos and Labels."",
+      ""fields"": [
+        {
+          ""name"": ""todoId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""relation"": ""Todo""
+        },
+        {
+          ""name"": ""labelId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""relation"": ""Label""
+        }
+      ]
+    },
+    {
+      ""name"": ""Comment"",
+      ""description"": ""Represents textual user input on a Todo."",
+      ""fields"": [
+        {
+          ""name"": ""commentId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""unique"": true
+        },
+        {
+          ""name"": ""content"",
+          ""type"": ""string"",
+          ""required"": true
+        },
+        {
+          ""name"": ""authorId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""relation"": ""User""
+        },
+        {
+          ""name"": ""todoId"",
+          ""type"": ""string"",
+          ""required"": true,
+          ""relation"": ""Todo""
+        },
+        {
+          ""name"": ""createdAt"",
+          ""type"": ""date"",
+          ""required"": true
+        }
+      ]
+    }
+  ]
+}"
+94,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"I'm building a Python client for the Snowflake SQL API v2 and need to handle the async flow correctly. Specifically, when I submit a query with `async=true`, I get a 202 response. How do I properly poll the status URL, handle a 408 timeout (making sure I don't lose the statement handle), and then retrieve the result partitions once it's done? Also, I need to ensure I'm sending the right headers for auth and idempotency using a `requestId`. Can you show me a robust implementation pattern for this?","To robustly handle the Snowflake SQL API v2 asynchronous flow in Python, you need to manage the initial submission, the polling loop (handling 202 and 408 states), and the final partition retrieval. Here is a pattern that covers authentication, idempotency, and error handling:
+
+### Key Requirements
+1.  **Headers**: Always include `Authorization` (Bearer token), `Content-Type: application/json`, `Accept: application/json`, and `User-Agent`. For idempotency, append a unique `requestId` UUID to the query string on retries.
+2.  **Submission**: POST to `/api/v2/statements` with `async=true`. Expect a `202 Accepted` with a `statementStatusUrl` and `statementHandle`.
+3.  **Polling**: GET the `statementStatusUrl`. 
+    -   **202**: Still running. Wait and retry.
+    -   **408**: Timeout. The response body still contains the `statementHandle` and `statementStatusUrl`. Do **not** resubmit; continue polling the same URL.
+    -   **200**: Success. Proceed to fetch partitions.
+    -   **422**: Error. Parse the `QueryFailureStatus`.
+4.  **Partitions**: Once successful, the response contains `resultSetMetaData` with `partitionInfo`. Fetch partitions via `GET /api/v2/statements/{handle}?partition=N`.
+
+### Implementation Pattern
+
+```python
+import requests
+import uuid
+import time
+from typing import Optional, Dict, Any
+
+class SnowflakeAsyncClient:
+    def __init__(self, account: str, token: str):
+        self.base_url = f""https://{account}.snowflakecomputing.com/api/v2""
+        self.session = requests.Session()
+        self.session.headers.update({
+            ""Authorization"": f""Bearer {token}"",
+            ""Content-Type"": ""application/json"",
+            ""Accept"": ""application/json"",
+            ""User-Agent"": ""MyApp/1.0""
+        })
+
+    def submit_query(self, sql: str, database: str, schema: str, warehouse: str) -> Dict[str, Any]:
+        request_id = str(uuid.uuid4())
+        url = f""{self.base_url}/statements?requestId={request_id}&async=true""
+        
+        payload = {
+            ""statement"": sql,
+            ""database"": database,
+            ""schema"": schema,
+            ""warehouse"": warehouse,
+            ""bindings"": {}
+        }
+        
+        resp = self.session.post(url, json=payload)
+        resp.raise_for_status()
+        return resp.json()
+
+    def poll_status(self, status_url: str, max_retries: int = 60, poll_interval: int = 2) -> Dict[str, Any]:
+        """"""Polls the status URL until completion or failure. Handles 408 timeouts gracefully.""""""
+        for attempt in range(max_retries):
+            resp = self.session.get(status_url)
+            
+            if resp.status_code == 200:
+                # Success
+                return resp.json()
+            elif resp.status_code == 202:
+                # Still running
+                time.sleep(poll_interval)
+                continue
+            elif resp.status_code == 408:
+                # Request Timeout. The docs say this returns a QueryStatus object 
+                # containing the statementHandle. We must NOT resubmit, just keep polling.
+                data = resp.json()
+                if 'statementStatusUrl' in data:
+                    # Update URL if redirected, though usually it's the same
+                    status_url = f""{self.base_url}{data['statementStatusUrl']}""
+                time.sleep(poll_interval)
+                continue
+            elif resp.status_code == 422:
+                # Unprocessable Entity (SQL Error)
+                raise Exception(f""Query failed: {resp.json()}"")
+            else:
+                resp.raise_for_status()
+                
+        raise TimeoutError(""Query did not complete within max retries"")
+
+    def fetch_partitions(self, statement_handle: str, partition_info: list) -> list:
+        """"""Retrieves all data partitions.""""""
+        all_rows = []
+        for i, partition in enumerate(partition_info):
+            url = f""{self.base_url}/statements/{statement_handle}?partition={i}""
+            resp = self.session.get(url)
+            resp.raise_for_status()
+            data = resp.json()
+            # Data is returned as nested arrays of strings
+            all_rows.extend(data.get('data', []))
+        return all_rows
+
+# Usage Example
+# client = SnowflakeAsyncClient(""my_account"", ""my_jwt_token"")
+# result = client.submit_query(""SELECT count(*) FROM large_table"", ""MY_DB"", ""MY_SCHEMA"", ""MY_WH"")
+# final_status = client.poll_status(result['statementStatusUrl'])
+# rows = client.fetch_partitions(result['statementHandle'], final_status['resultSetMetaData']['partitionInfo'])
+```
+
+### Critical Notes
+-   **408 Handling**: A 408 response indicates the statement execution exceeded the timeout limit specified in the request (or the default). However, the statement might still be running in the background. The response body includes the `statementHandle`, allowing you to continue polling. Never generate a new `requestId` on a 408; that would create a duplicate query.
+-   **Idempotency**: If the initial POST fails due to a network error (before a response is received), you can retry with the *same* `requestId` and `retry=true` query parameter to ensure the statement isn't executed twice.
+-   **Data Types**: Remember that Snowflake returns all data as strings in the JSON payload. You may need to cast types based on the `rowType` metadata if strict typing is required."
+119,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"I need to run our truth-seeking eval suite (AGI-1886) but route the prompts through the new deliberation_rag pipeline (AGI-1923) instead of hitting the API directly. Can you show me how to integrate the SugyaPipeline into run_eval.py as a custom provider? Also, what are the main gotchas regarding the corpus dependency and latency?","You can integrate the `deliberation_rag` pipeline by adding a custom `DeliberationProvider` class to your `run_eval.py`. This provider will instantiate the `SugyaPipeline` and wrap its synchronous `run()` method in `asyncio.to_thread` to fit the async eval runner.
+
+Here is the implementation pattern:
+
+```python
+import sys, asyncio
+from pathlib import Path
+sys.path.insert(0, ""../AGI-1923-talmudic-deliberation"")
+
+from deliberation_rag.pipeline import SugyaPipeline
+
+class DeliberationProvider(Provider):
+    name = ""deliberation""
+
+    def __init__(self, args):
+        self.pipeline = SugyaPipeline(
+            corpus_dir=[Path(""../AGI-1891-judaic-constitution/outputs/extracted_lessons"")],
+            precedent_dir=Path(""precedents/""),
+            skip_triage=getattr(args, ""deliberation_skip_triage"", False),
+        )
+
+    async def chat(self, model: str, messages: list[dict]) -> str:
+        # Wrap synchronous pipeline call for async context
+        trace = await asyncio.to_thread(self.pipeline.run, messages)
+        return trace[""response""]
+```
+
+Register this in your `PROVIDERS` dict and run with `--provider deliberation`.
+
+**Key Gotchas:**
+
+1.  **Corpus Dependency (Critical):** The pipeline requires the JSONL lesson files generated by `AGI-1891`. If these files are missing from the specified `corpus_dir`, retrieval returns empty results. The pipeline won't crash, but the advocates and judge will operate without grounding material, significantly degrading performance. Ensure you've run the extraction scripts first.
+
+2.  **Latency Overhead:** A direct API call is ~1 LLM request. The deliberation pipeline triggers ~5–7 requests per turn (triage, reframe, 3 parallel advocates, judge, respond). With 14 eval prompts and multiple runs, this increases total runtime from minutes to roughly 6–10 minutes depending on concurrency settings.
+
+3.  **Provider Lock-in:** The current `deliberation_rag` implementation is hardcoded to Anthropic. You cannot swap the underlying model to OpenAI or local models without modifying `llm.py`.
+
+4.  **Triage Gating:** By default, the triage stage might route some prompts to `skip` (direct answer) if they don't meet risk thresholds. For evaluation purposes where you want to test the full pipeline on every prompt, instantiate with `skip_triage=True`."
+221,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),raw_json,"im trying to tune the gradient routing params for my moe unlearning exp. intuitively, what happens if i set aux_route_prc and robust_prc high vs low? like does high aux_route just mess up the separation or does it help the core model learn better? and same for robust_prc -- does training aux experts on core data actually stop adversarial fine-tuning or just waste compute? need to know the tradeoffs before i run the sweep.","Great questions. These two hyperparameters control the fundamental trade-off between **modularity** (clean separation of knowledge) and **robustness/competence** (model performance and resistance to attacks). Here's the intuitive breakdown:
+
+### `aux_route_prc` (Auxiliary Routing Percentage)
+This controls how much the **core expert** learns from the auxiliary (toxic/sensitive) data.
+
+*   **High Value (e.g., 0.75 – 1.0):**
+    *   **What happens:** The core weights receive gradient updates from the aux data batches. The core model becomes ""informed"" about the toxic domain.
+    *   **Pros:** The model maintains higher general competence because the core understands the context of the aux data.
+    *   **Cons:** **Poor modularity.** The toxic knowledge becomes entangled in the core weights. When you try to ""unlearn"" by ablating the aux expert, the core still retains some of that knowledge, making the unlearning incomplete.
+
+*   **Low Value (e.g., 0.0 – 0.25):**
+    *   **What happens:** The core weights rarely or never see gradients from aux data. The knowledge stays strictly isolated in the aux experts.
+    *   **Pros:** **High modularity.** You can cleanly ablate the aux expert at inference time, and the core model has almost no memory of the toxic content.
+    *   **Cons:** The core model might be ""under-informed,"" potentially hurting its general performance on tasks related to that domain.
+
+> **Analogy:** Think of `aux_route_prc` as the level of cross-contamination allowed between a clean room and a hazardous materials lab. High contamination means the clean room knows more about the hazards (good for context) but is harder to decontaminate later (bad for unlearning).
+
+### `robust_prc` (Robustness Percentage)
+This controls how much the **aux experts** are trained on **core (benign)** data.
+
+*   **High Value (e.g., 0.5 – 1.0):**
+    *   **What happens:** The aux experts see a lot of standard, benign data. They become competent at general tasks, not just the toxic ones.
+    *   **Pros:** **High robustness against adversarial elicitation.** If an attacker tries to fine-tune the aux expert to recover the forgotten toxic knowledge, they will simultaneously degrade the model's performance on benign tasks (because the aux expert is now responsible for those too). This creates a ""poison pill"" defense.
+    *   **Cons:** The aux experts are less specialized. You also spend more compute training them on data they theoretically shouldn't need if the goal was pure isolation.
+
+*   **Low Value (e.g., 0.0 – 0.25):**
+    *   **What happens:** The aux experts see mostly aux data. They remain highly specialized.
+    *   **Pros:** Efficient use of compute for specialization.
+    *   **Cons:** **Low robustness.** An adversary can fine-tune the aux expert on toxic data to recover the knowledge without negatively impacting the model's general performance, because the aux expert wasn't doing much useful work on benign data anyway.
+
+> **Analogy:** Think of `robust_prc` as cross-training a specialist. If they also know how to do general work, firing them (ablating them) hurts overall productivity—but keeping them means they can't be easily poached and used against you without causing collateral damage.
+
+### Summary of Trade-offs
+
+| Configuration | Modularity (Clean Unlearning) | Competence (General Perf) | Robustness (vs. Fine-tuning Attack) |
+| :--- | :--- | :--- | :--- |
+| **High Aux, High Robust** | ❌ Low (Entangled) | ✅ High | ✅ High |
+| **High Aux, Low Robust** | ❌ Low (Entangled) | ✅ High | ❌ Low |
+| **Low Aux, High Robust** | ✅ High (Clean) | ⚠️ Medium | ✅ High |
+| **Low Aux, Low Robust** | ✅ High (Clean) | ⚠️ Medium/Low | ❌ Low |
+
+For your experiment (`exp_11`), the default settings (`aux_route_prc=0.75`, `robust_prc=0.5`) represent a **middle-ground strategy**: allowing some core contamination to maintain competence while ensuring enough robustness to resist simple adversarial fine-tuning. If your primary goal is provable, clean unlearning regardless of minor competence drops, you should sweep towards **lower `aux_route_prc`**. If your goal is resisting elicitation attacks, sweep towards **higher `robust_prc`**."
+268,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"need a python script to sync incidents from our dev instance to prod using the servicenow table api. gotta handle the sysparm_query encoding right and do offset pagination properly so we dont miss records or dup them. also need to make sure it handles rate limits (429s) gracefully with retries. oh and it should be idempotent -- if i run it twice it shouldn't create duplicates, just update if needed. can you sketch out the main logic for fetching and upserting records while preserving the sys_id?","Here's a Python sketch for syncing ServiceNow incidents with proper pagination, query encoding, rate limit handling, and idempotency:
+
+```python
+import requests
+import time
+from urllib.parse import quote
+
+class ServiceNowSync:
+    def __init__(self, instance_url, username, password):
+        self.base_url = instance_url.rstrip('/')
+        self.auth = (username, password)
+        self.session = requests.Session()
+        self.session.auth = self.auth
+        self.session.headers.update({'Accept': 'application/json'})
+    
+    def fetch_incidents(self, query, limit=500):
+        """"""Fetch incidents with offset pagination""""""
+        all_records = []
+        offset = 0
+        
+        while True:
+            # Properly encode the query parameter
+            encoded_query = quote(query, safe='')
+            url = f""{self.base_url}/api/now/table/incident""
+            params = {
+                'sysparm_query': encoded_query,
+                'sysparm_limit': limit,
+                'sysparm_offset': offset,
+                'sysparm_fields': 'sys_id,number,short_description,state,created_on'
+            }
+            
+            response = self._make_request_with_retry('GET', url, params=params)
+            data = response.json()
+            records = data.get('result', [])
+            
+            if not records:
+                break
+                
+            all_records.extend(records)
+            offset += len(records)
+            
+            # If we got fewer records than limit, we're done
+            if len(records) < limit:
+                break
+        
+        return all_records
+    
+    def upsert_incident(self, record):
+        """"""Create or update incident idempotently using sys_id""""""
+        sys_id = record.get('sys_id')
+        url = f""{self.base_url}/api/now/table/incident""
+        
+        # Prepare payload excluding sys_id for creation, including it for update
+        payload = {k: v for k, v in record.items() if k != 'sys_id'}
+        
+        if sys_id:
+            # Update existing record
+            update_url = f""{url}/{sys_id}""
+            response = self._make_request_with_retry('PATCH', update_url, json=payload)
+        else:
+            # Create new record
+            response = self._make_request_with_retry('POST', url, json=payload)
+        
+        return response.json().get('result')
+    
+    def _make_request_with_retry(self, method, url, max_retries=5, **kwargs):
+        """"""Handle 429 rate limits with exponential backoff""""""
+        retries = 0
+        
+        while retries <= max_retries:
+            response = self.session.request(method, url, **kwargs)
+            
+            if response.status_code == 429:
+                retry_after = int(response.headers.get('Retry-After', 2 ** retries))
+                print(f""Rate limited. Waiting {retry_after} seconds..."")
+                time.sleep(retry_after)
+                retries += 1
+                continue
+            
+            response.raise_for_status()
+            return response
+        
+        raise Exception(""Max retries exceeded for rate limit"")
+    
+    def sync(self, query):
+        """"""Main sync logic""""""
+        incidents = self.fetch_incidents(query)
+        synced = []
+        
+        for incident in incidents:
+            result = self.upsert_incident(incident)
+            synced.append(result['sys_id'])
+            print(f""Synced incident {result['number']}"")
+        
+        return synced
+
+# Usage example
+if __name__ == ""__main__"":
+    syncer = ServiceNowSync(
+        instance_url=""https://dev-instance.service-now.com"",
+        username=""admin"",
+        password=""password""
+    )
+    
+    # Query for incidents created in last 24 hours
+    query = ""created_on@javascript:gs.daysAgoStart(0)""
+    synced_ids = syncer.sync(query)
+    print(f""Synced {len(synced_ids)} incidents"")
+```
+
+Key features:
+1. **Query Encoding**: Uses `urllib.parse.quote` to properly encode special characters in `sysparm_query`
+2. **Offset Pagination**: Implements proper offset-based pagination with `sysparm_offset` and `sysparm_limit`
+3. **Rate Limit Handling**: Catches 429 responses and respects the `Retry-After` header with exponential backoff
+4. **Idempotency**: Uses PATCH for updates (when sys_id exists) and POST for creates, preventing duplicates
+5. **sys_id Preservation**: Maintains the unique identifier across sync operations
+
+Note: For production use, consider using environment variables for credentials and adding more robust error handling for network issues and API errors."
+328,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),raw_json,"Quick sanity check on the visual prompt sweep script -- are we actually using held-out classes for the val split by default, or did I miss a flag somewhere? Worried about data leakage if it's just splitting images.","Yes, the script uses held-out classes for validation by default. 
+
+In `run_visual_prompt_sweep.sh`, the `run_config` function doesn't explicitly pass the `--hold_out_classes` argument. Consequently, `visual_prompt_trainer.py` falls back to its default value of `hold_out_classes=True` (defined in the `main` function arguments).
+
+When this flag is true, the `LVISVisualPrompting` dataset class (`_datasets/lvis_visual_prompt_dataset.py`) performs a class-level split rather than an image-level split. Specifically, it shuffles all available class labels and partitions them into disjoint sets for training, validation, and testing. This ensures that the classes encountered during validation are completely unseen during training, which is the correct setup for evaluating novel-class generalization and avoiding data leakage.
+
+The trainer also includes an explicit sanity check (around line 578) that logs a warning if any class overlap is detected between the train and validation sets, further confirming this behavior."
+497,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"I need a Python script to run async SQL queries against our Snowflake warehouse using their v2 API. It needs to handle the 202 polling loop properly, support bound parameters to prevent injection, and report structured errors if the query fails or times out. Can you write a robust runner that handles the requestId idempotency and status polling?","Here is a robust Python implementation for running asynchronous SQL queries against the Snowflake SQL API v2. It handles authentication, submission with bound parameters, the 202 polling loop, and structured error reporting.
+
+```python
+import os
+import time
+import uuid
+import json
+import hashlib
+import hmac
+from datetime import datetime, timezone
+import requests
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+
+class SnowflakeAsyncRunner:
+    def __init__(self, account, user, private_key_path, warehouse, database, schema, role):
+        self.account = account
+        self.user = user
+        self.warehouse = warehouse
+        self.database = database
+        self.schema = schema
+        self.role = role
+        self.private_key = self._load_private_key(private_key_path)
+        self.base_url = f""https://{account}.snowflakecomputing.com/api/v2/statements""
+        self.session = requests.Session()
+
+    def _load_private_key(self, path):
+        with open(path, ""rb"") as key_file:
+            p_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+        return p_key
+
+    def _generate_jwt(self):
+        import jwt
+        now = int(time.time())
+        # Construct the issuer and subject per Snowflake requirements
+        # Account identifier must replace dots with hyphens
+        safe_account = self.account.replace('.', '-')
+        payload = {
+            ""iss"": f""{safe_account}.{self.user}.SHA256:{self._get_public_key_fingerprint()}"",
+            ""sub"": f""{safe_account}.{self.user}"",
+            ""iat"": now,
+            ""exp"": now + 3600  # Valid for 1 hour
+        }
+        token = jwt.encode(payload, self.private_key, algorithm=""RS256"")
+        return token
+
+    def _get_public_key_fingerprint(self):
+        public_key = self.private_key.public_key()
+        der = public_key.public_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        sha256_hash = hashlib.sha256(der).digest()
+        return ""SHA256:"" + base64.b64encode(sha256_hash).decode('utf-8')
+
+    def _get_headers(self):
+        token = self._generate_jwt()
+        return {
+            ""Authorization"": f""Bearer {token}"",
+            ""Content-Type"": ""application/json"",
+            ""Accept"": ""application/json"",
+            ""User-Agent"": ""SnowflakeAsyncRunner/1.0"",
+            ""X-Snowflake-Authorization-Token-Type"": ""KEYPAIR_JWT""
+        }
+
+    def execute_query(self, sql, bindings=None, request_id=None):
+        """"""
+        Execute a SQL query asynchronously.
+        
+        Args:
+            sql (str): The SQL statement to execute.
+            bindings (dict): Optional dictionary of bound parameters.
+            request_id (str): Optional UUID for idempotency. If None, one is generated.
+            
+        Returns:
+            dict: The final result set or error information.
+        """"""
+        if request_id is None:
+            request_id = str(uuid.uuid4())
+            
+        payload = {
+            ""statement"": sql,
+            ""timeout"": 60,
+            ""database"": self.database,
+            ""schema"": self.schema,
+            ""warehouse"": self.warehouse,
+            ""role"": self.role,
+            ""async"": True
+        }
+        
+        if bindings:
+            # Snowflake expects bindings in a specific format: { ""1"": { ""type"": ""FIXED"", ""value"": ""123"" } }
+            formatted_bindings = {}
+            for i, (key, value) in enumerate(bindings.items(), 1):
+                # Infer type or default to TEXT/FIXED based on value
+                val_type = ""FIXED"" if isinstance(value, (int, float)) else ""TEXT""
+                formatted_bindings[str(i)] = {
+                    ""type"": val_type,
+                    ""value"": str(value)
+                }
+            payload[""bindings""] = formatted_bindings
+
+        headers = self._get_headers()
+        params = {""requestId"": request_id}
+        
+        # Submit the query
+        response = self.session.post(self.base_url, json=payload, headers=headers, params=params)
+        
+        if response.status_code == 202:
+            # Async execution started, poll for results
+            result_url = response.json().get(""statementStatusUrl"")
+            if not result_url:
+                raise Exception(""Async response missing statementStatusUrl"")
+            
+            return self._poll_status(result_url, headers)
+        elif response.status_code == 200:
+            # Synchronous completion (rare with async=True but possible for fast queries)
+            return self._process_response(response.json())
+        else:
+            self._handle_error(response)
+
+    def _poll_status(self, status_url, headers):
+        """"""
+        Poll the statement status URL until completion or failure.
+        """"""
+        # Construct full URL if relative
+        if status_url.startswith(""/""):
+            full_url = f""https://{self.account}.snowflakecomputing.com{status_url}""
+        else:
+            full_url = status_url
+            
+        max_retries = 30
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            response = self.session.get(full_url, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                code = data.get(""code"")
+                
+                if code == ""090001"": # Success
+                    return self._process_response(data)
+                elif code == ""000604"": # Canceled
+                    raise Exception(f""Query was canceled: {data.get('message')}"")
+                else:
+                    # Still processing or other state
+                    time.sleep(2)
+                    retry_count += 1
+                    continue
+                    
+            elif response.status_code == 202:
+                # Still running
+                time.sleep(2)
+                retry_count += 1
+                continue
+                
+            elif response.status_code == 408:
+                # Timeout, but we can still poll using the handle in the response
+                data = response.json()
+                if ""statementHandle"" in data:
+                    # Continue polling
+                    time.sleep(2)
+                    retry_count += 1
+                    continue
+                else:
+                    raise Exception(f""Query timeout: {data}"")
+            else:
+                self._handle_error(response)
+                
+        raise Exception(""Query polling timed out"")
+
+    def _process_response(self, data):
+        """"""
+        Process a successful response, handling partitioned results if necessary.
+        """"""
+        if ""data"" in data:
+            rows = data[""data""]
+            metadata = data.get(""resultSetMetaData"", {})
+            columns = [col[""name""] for col in metadata.get(""rowType"", [])]
+            
+            # Handle additional partitions if present
+            partition_info = metadata.get(""partitionInfo"", [])
+            if len(partition_info) > 1:
+                # Fetch remaining partitions
+                statement_handle = data.get(""statementHandle"")
+                for i in range(1, len(partition_info)):
+                    partition_url = f""{self.base_url}/{statement_handle}?partition={i}""
+                    headers = self._get_headers()
+                    # Note: Partition fetches may require specific headers or auth renewal
+                    # For brevity, assuming same session/auth works
+                    part_resp = self.session.get(partition_url, headers=headers)
+                    if part_resp.status_code == 200:
+                        # Partition responses are often gzipped
+                        import gzip
+                        decompressed = gzip.decompress(part_resp.content)
+                        part_data = json.loads(decompressed)
+                        rows.extend(part_data.get(""data"", []))
+                    else:
+                        raise Exception(f""Failed to fetch partition {i}: {part_resp.text}"")
+            
+            return {
+                ""success"": True,
+                ""columns"": columns,
+                ""rows"": rows,
+                ""row_count"": metadata.get(""numRows"", len(rows))
+            }
+        else:
+            return {""success"": True, ""message"": ""Statement executed (no result set)""}
+
+    def _handle_error(self, response):
+        """"""
+        Raise a structured exception for API errors.
+        """"""
+        try:
+            error_data = response.json()
+            raise SnowflakeAPIError(
+                status_code=response.status_code,
+                code=error_data.get(""code""),
+                message=error_data.get(""message""),
+                sql_state=error_data.get(""sqlState""),
+                statement_handle=error_data.get(""statementHandle"")
+            )
+        except json.JSONDecodeError:
+            raise SnowflakeAPIError(
+                status_code=response.status_code,
+                message=response.text
+            )
+
+class SnowflakeAPIError(Exception):
+    def __init__(self, status_code, code=None, message=None, sql_state=None, statement_handle=None):
+        self.status_code = status_code
+        self.code = code
+        self.message = message
+        self.sql_state = sql_state
+        self.statement_handle = statement_handle
+        super().__init__(f""Snowflake API Error {status_code} ({code}): {message}"")
+
+# Usage Example:
+# runner = SnowflakeAsyncRunner(
+#     account=""myaccount"",
+#     user=""myuser"",
+#     private_key_path=""rsa_key.p8"",
+#     warehouse=""MY_WH"",
+#     database=""MY_DB"",
+#     schema=""PUBLIC"",
+#     role=""MY_ROLE""
+# )
+#
+# try:
+#     result = runner.execute_query(
+#         ""SELECT * FROM my_table WHERE id = ?"",
+#         bindings={""1"": 12345},
+#         request_id=""unique-id-for-idempotency""
+#     )
+#     print(result)
+# except SnowflakeAPIError as e:
+#     print(f""Query failed: {e.message} (Code: {e.code})"")
+```
+
+### Key Features:
+1.  **JWT Authentication**: Generates the required JWT token using your private key.
+2.  **Async Execution**: Submits queries with `async=true` and handles the `202 Accepted` response.
+3.  **Polling Loop**: Automatically polls the `statementStatusUrl` until the query completes, fails, or times out.
+4.  **Bound Parameters**: Safely formats and injects bound parameters to prevent SQL injection.
+5.  **Idempotency**: Uses a `requestId` to ensure retrying a request doesn't execute the query twice.
+6.  **Partition Handling**: Detects and fetches additional result partitions if the result set is large.
+7.  **Structured Errors**: Raises a custom `SnowflakeAPIError` with detailed fields (`code`, `sqlState`, `message`) for easy debugging."
+539,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"I need to build a Python client for the Snowflake SQL API v2 that handles async query execution properly. Can you show me how to submit a statement with bound parameters, poll the status URL when I get a 202 response, and handle the 408 timeout case without losing the statement handle? Also need to make sure we're sending the right auth headers and retrying idempotently if the connection drops.","Here's a robust Python implementation for the Snowflake SQL API v2 that covers async execution, polling, timeout handling, and idempotent retries:
+
+```python
+import http.client
+import json
+import time
+import uuid
+from typing import Optional, Dict, Any, List
+
+class SnowflakeSQLClient:
+    def __init__(self, account: str, token: str, warehouse: str, database: str, schema: str):
+        self.host = f""{account}.snowflakecomputing.com""
+        self.token = token
+        self.warehouse = warehouse
+        self.database = database
+        self.schema = schema
+        self.session = http.client.HTTPSConnection(self.host)
+    
+    def _get_headers(self) -> Dict[str, str]:
+        return {
+            ""Authorization"": f""Bearer {self.token}"",
+            ""Content-Type"": ""application/json"",
+            ""Accept"": ""application/json"",
+            ""User-Agent"": ""MyApp/1.0"",
+            ""X-Snowflake-Authorization-Token-Type"": ""KEYPAIR_JWT""
+        }
+    
+    def submit_statement(self, sql: str, bindings: Optional[Dict] = None, 
+                        async_mode: bool = True, request_id: Optional[str] = None) -> Dict[str, Any]:
+        """"""Submit a SQL statement with optional bindings and async execution.""""""
+        if request_id is None:
+            request_id = str(uuid.uuid4())
+        
+        payload = {
+            ""statement"": sql,
+            ""database"": self.database,
+            ""schema"": self.schema,
+            ""warehouse"": self.warehouse,
+            ""bindings"": bindings or {}
+        }
+        
+        url = f""/api/v2/statements?requestId={request_id}&async={str(async_mode).lower()}""
+        
+        try:
+            self.session.request(""POST"", url, body=json.dumps(payload), headers=self._get_headers())
+            response = self.session.getresponse()
+            status = response.status
+            body = json.loads(response.read().decode())
+            
+            if status == 200:
+                return {""status"": ""complete"", ""data"": body}
+            elif status == 202:
+                return {""status"": ""running"", ""handle"": body.get(""statementHandle""), 
+                        ""status_url"": body.get(""statementStatusUrl"")}
+            elif status == 408:
+                # Timeout but we still have the handle to poll
+                return {""status"": ""timeout"", ""handle"": body.get(""statementHandle""),
+                        ""message"": ""Query timed out but may still be running""}
+            else:
+                return {""status"": ""error"", ""code"": status, ""details"": body}
+                
+        except Exception as e:
+            # Idempotent retry logic - same request_id prevents duplicate execution
+            raise Exception(f""Submission failed: {str(e)}. Retry with same request_id for idempotency."")
+    
+    def poll_status(self, statement_handle: str, max_polls: int = 60, poll_interval: int = 1) -> Dict[str, Any]:
+        """"""Poll the status URL until completion or failure.""""""
+        url = f""/api/v2/statements/{statement_handle}""
+        
+        for i in range(max_polls):
+            try:
+                self.session.request(""GET"", url, headers=self._get_headers())
+                response = self.session.getresponse()
+                status = response.status
+                body = json.loads(response.read().decode())
+                
+                if status == 200:
+                    return {""status"": ""complete"", ""data"": body}
+                elif status == 202:
+                    time.sleep(poll_interval)
+                    continue
+                elif status == 408:
+                    # Still running, preserve handle and continue polling
+                    time.sleep(poll_interval)
+                    continue
+                else:
+                    return {""status"": ""error"", ""code"": status, ""details"": body}
+                    
+            except Exception as e:
+                if i == max_polls - 1:
+                    raise Exception(f""Polling failed after {max_polls} attempts: {str(e)}"")
+                time.sleep(poll_interval * 2)  # Exponential backoff
+        
+        return {""status"": ""timeout"", ""message"": ""Max polling attempts reached""}
+    
+    def execute_with_retry(self, sql: str, bindings: Optional[Dict] = None, 
+                          max_retries: int = 3) -> Dict[str, Any]:
+        """"""Execute with automatic retry on connection drops using idempotent request_id.""""""
+        request_id = str(uuid.uuid4())
+        
+        for attempt in range(max_retries):
+            try:
+                result = self.submit_statement(sql, bindings, async_mode=True, request_id=request_id)
+                
+                if result[""status""] == ""running"" or result[""status""] == ""timeout"":
+                    return self.poll_status(result[""handle""])
+                elif result[""status""] == ""complete"":
+                    return result
+                elif result[""status""] == ""error"":
+                    # Don't retry on logical errors (400, 422)
+                    if result[""code""] in [400, 422]:
+                        return result
+                    # Retry on transient errors
+                    if attempt == max_retries - 1:
+                        return result
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                    
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise
+                time.sleep(2 ** attempt)
+        
+        return {""status"": ""error"", ""message"": ""Max retries exceeded""}
+
+# Usage example:
+# client = SnowflakeSQLClient(""myaccount"", ""mytoken"", ""MY_WH"", ""MY_DB"", ""MY_SCHEMA"")
+# result = client.execute_with_retry(
+#     ""SELECT * FROM users WHERE id = ?"", 
+#     bindings={""1"": {""type"": ""FIXED"", ""value"": ""123""}}
+# )
+```
+
+Key features:
+1. **Idempotent retries**: Uses `requestId` parameter so network failures can be retried safely
+2. **Async handling**: Properly processes 202 responses and polls the `statementStatusUrl`
+3. **408 timeout resilience**: Preserves the statement handle even on timeout to continue polling
+4. **Correct headers**: Includes all required auth and content headers
+5. **Bound parameters**: Supports Snowflake's binding syntax with type information
+6. **Error handling**: Distinguishes between retryable (network) and non-retryable (SQL error) failures
+
+Make sure to replace the account, token, and database identifiers with your actual Snowflake credentials."
+584,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"I need a Python script to sync incidents from our ServiceNow instance. It should hit the Table API, handle the sysparm_query encoding for filters, and do offset-based pagination properly. Also need it to upsert records idempotently using the sys_id and handle any rate limit (429) or structured error responses gracefully. Can you sketch out the client logic?","Here is a robust Python client structure for syncing ServiceNow incidents using the Table API. It handles `sysparm_query` encoding, offset pagination, idempotent upserts, and exponential backoff for rate limits.
+
+```python
+import requests
+import time
+from typing import List, Dict, Optional
+
+class ServiceNowClient:
+    def __init__(self, instance: str, username: str, password: str):
+        self.base_url = f""https://{instance}.service-now.com/api/now/table""
+        self.session = requests.Session()
+        self.session.auth = (username, password)
+        self.session.headers.update({""Accept"": ""application/json""})
+
+    def _request(self, method: str, endpoint: str, params: Optional[Dict] = None, data: Optional[Dict] = None) -> Dict:
+        """"""Handles request with retry logic for 429 Rate Limiting.""""""
+        url = f""{self.base_url}/{endpoint}""
+        max_retries = 3
+        
+        for attempt in range(max_retries):
+            try:
+                resp = self.session.request(method, url, params=params, json=data)
+                
+                if resp.status_code == 429:
+                    retry_after = int(resp.headers.get('Retry-After', 60))
+                    print(f""Rate limited. Waiting {retry_after}s..."")
+                    time.sleep(retry_after)
+                    continue
+                
+                resp.raise_for_status()
+                return resp.json().get('result', {})
+                
+            except requests.exceptions.RequestException as e:
+                if attempt == max_retries - 1:
+                    raise
+                time.sleep(2 ** attempt)
+
+    def get_incidents(self, query: str, limit: int = 100) -> List[Dict]:
+        """"""Fetches incidents with offset pagination.""""""
+        all_records = []
+        offset = 0
+        
+        while True:
+            params = {
+                ""sysparm_query"": query,
+                ""sysparm_limit"": limit,
+                ""sysparm_offset"": offset,
+                ""sysparm_fields"": ""sys_id,number,short_description,state,assigned_to""
+            }
+            
+            batch = self._request(""GET"", ""incident"", params=params)
+            if not batch:
+                break
+                
+            all_records.extend(batch)
+            if len(batch) < limit:
+                break
+            offset += limit
+            
+        return all_records
+
+    def upsert_incident(self, sys_id: Optional[str], data: Dict) -> Dict:
+        """"""Idempotent upsert: PATCH if exists, POST if new.""""""
+        if sys_id:
+            # Verify existence first to ensure idempotency if needed, 
+            # or just attempt PATCH and fallback to POST on 404
+            return self._request(""PATCH"", f""incident/{sys_id}"", data=data)
+        else:
+            return self._request(""POST"", ""incident"", data=data)
+
+# Usage Example
+if __name__ == ""__main__"":
+    client = ServiceNowClient(""dev12345"", ""admin"", ""password"")
+    
+    # Encode query: active=true^priority=1
+    incidents = client.get_incidents(""active=true^priority=1"")
+    
+    for inc in incidents:
+        # Perform local logic, then upsert
+        update_data = {""state"": ""in_progress""}
+        result = client.upsert_incident(inc.get('sys_id'), update_data)
+        print(f""Updated {result.get('number')}"")
+```
+
+### Key Implementation Details:
+1.  **Query Encoding**: ServiceNow uses caret (`^`) for AND and `OR` for disjunctions. The `sysparm_query` parameter accepts this encoded string directly.
+2.  **Pagination**: The loop increments `sysparm_offset` by `sysparm_limit` until the returned batch is smaller than the limit.
+3.  **Rate Limiting**: The `_request` method catches HTTP 429, reads the `Retry-After` header, and sleeps before retrying.
+4.  **Error Handling**: Structured errors from ServiceNow usually come in the `error` key of the response if not 2xx; this script relies on `raise_for_status()` but can be extended to parse `resp.json().get('error')` for detailed messaging."
+592,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),raw_json,"When people report the total size of a Python codebase, do they usually count the test files in that number, or is it standard to only count the production code?","It depends on the context and what you're trying to measure, but in most industry settings, **yes, test code is included** when reporting overall codebase size.
+
+Tools like `cloc`, `scc`, or GitHub's language breakdown include tests by default because they represent real engineering effort and maintenance burden. If you ship the tests in your repository, they count toward the total footprint.
+
+However, there are specific scenarios where people separate them:
+*   **Complexity & Defect Density:** When analyzing how complex the business logic is or calculating defects per line of code, tests are often excluded because they don't represent application logic.
+*   **Velocity Metrics:** Some teams track ""production LOC"" vs. ""test LOC"" to monitor test coverage ratios. A high ratio might indicate thoroughness, while a low one could signal fragile design.
+
+For a project like `desloppify`:
+*   **Total Size:** ~101k lines (includes both).
+*   **Production Only:** ~56k lines (core engine, plugins, scoring).
+*   **Test Only:** ~45k lines.
+
+This results in a roughly **0.8:1 test-to-code ratio**, which is considered solid for a tool that needs deep integration tests across 28 languages. So, if you are asked ""how big is the repo?"", give the total. If you are asked ""how much business logic is there?"", filter out the tests."
+645,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"I need to build a Python service that syncs local incident data with ServiceNow using their Table API. It needs to handle `sysparm_query` encoding properly, implement offset-based pagination since we have thousands of records, and ensure we don't create duplicates if the script crashes mid-run (idempotent upserts). Also, make sure it gracefully handles rate limiting (429s) and parses the structured error responses ServiceNow sends back. Can you sketch out the core logic for this?","Here is a robust approach to building a ServiceNow incident synchronizer in Python that addresses your requirements for pagination, idempotency, and error handling.
+
+### Core Architecture
+
+You'll need a client that manages the HTTP session, handles authentication, and implements retry logic for rate limits. The synchronization logic should separate fetching (with pagination) from the upsert operation.
+
+### Key Implementation Details
+
+1.  **Query Encoding**: Use `urllib.parse.quote` for `sysparm_query` values to ensure special characters don't break the URL.
+2.  **Offset Pagination**: Since ServiceNow's Table API supports `sysparm_offset` and `sysparm_limit`, you'll loop until the returned list is empty or smaller than the limit. Note that deep offset pagination can be slow; if performance becomes an issue, consider switching to bookmark-based pagination using `sysparm_display_value=true` and tracking the last `sys_id`.
+3.  **Idempotent Upsert**: 
+    *   Check if a record exists by querying for a unique business key (e.g., `external_ticket_id`).
+    *   If it exists (`200 OK` with a result), use `PATCH` to update it.
+    *   If it doesn't exist (`200 OK` with empty result), use `POST` to create it.
+    *   Preserve the `sys_id` locally after creation to allow future updates.
+4.  **Rate Limiting (429)**: Implement an exponential backoff strategy. When a 429 is received, parse the `Retry-After` header if present, wait, and then retry. Limit the number of retries to avoid infinite loops.
+5.  **Error Handling**: ServiceNow returns errors in a specific JSON envelope: `{""error"": {""message"": ""..."", ""detail"": ""...""}, ""status"": ""failure""}`. Your client should parse this specifically rather than treating all non-200s as generic HTTP errors.
+
+### Sample Logic Structure
+
+```python
+import requests
+import time
+from urllib.parse import quote
+
+class ServiceNowSync:
+    def __init__(self, instance_url, username, password):
+        self.base_url = f""https://{instance_url}.service-now.com/api/now/table/incident""
+        self.session = requests.Session()
+        self.session.auth = (username, password)
+        self.session.headers.update({""Accept"": ""application/json""})
+
+    def _request(self, method, endpoint, params=None, json_data=None, max_retries=3):
+        retries = 0
+        while retries < max_retries:
+            resp = self.session.request(method, endpoint, params=params, json=json_data)
+            
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get('Retry-After', 2 ** retries))
+                time.sleep(retry_after)
+                retries += 1
+                continue
+                
+            if resp.status_code >= 400:
+                try:
+                    err_body = resp.json()
+                    msg = err_body.get('error', {}).get('message', 'Unknown error')
+                    detail = err_body.get('error', {}).get('detail', '')
+                    raise Exception(f""ServiceNow Error: {msg} - {detail}"")
+                except ValueError:
+                    resp.raise_for_status()
+            
+            return resp.json()
+        
+        raise Exception(""Max retries exceeded due to rate limiting"")
+
+    def sync_incidents(self, local_incidents):
+        for item in local_incidents:
+            # 1. Construct query for existing record
+            query = f""u_external_id={quote(item['external_id'])}""
+            params = {""sysparm_query"": query, ""sysparm_fields"": ""sys_id""}
+            
+            # 2. Search
+            existing = self._request(""GET"", self.base_url, params=params)
+            
+            if existing.get('result'):
+                # Update existing
+                sys_id = existing['result'][0]['sys_id']
+                self._request(""PATCH"", f""{self.base_url}/{sys_id}"", json_data=item)
+            else:
+                # Create new
+                result = self._request(""POST"", self.base_url, json_data=item)
+                # Store new sys_id locally for future runs
+                item['sys_id'] = result['result']['sys_id']
+```
+
+This pattern ensures you respect API limits, avoid duplicates, and handle the specific quirks of the ServiceNow Table API."
+679,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"I need a Python script to hit the Snowflake SQL API v2. It should submit a query with async=true, then poll the status URL until it's done. Also need to handle canceling the statement if it takes too long. Make sure to preserve the statementHandle and error details like sqlState if it fails. Oh, and use bound parameters for the query values. Don't worry about auth, just assume I have a token.","Here is a Python script using the `requests` library to interact with the Snowflake SQL API v2. It handles asynchronous submission, polling, cancellation, and error reporting as requested.
+
+```python
+import requests
+import time
+import uuid
+
+BASE_URL = ""https://<account_identifier>.snowflakecomputing.com/api/v2""
+TOKEN = ""<your_jwt_token>""
+
+HEADERS = {
+    ""Authorization"": f""Bearer {TOKEN}"",
+    ""Accept"": ""application/json"",
+    ""Content-Type"": ""application/json"",
+    ""User-Agent"": ""snowflake-async-runner/1.0""
+}
+
+def submit_query(statement, bindings=None):
+    """"""Submits a query with async=true and bound parameters.""""""
+    request_id = str(uuid.uuid4())
+    url = f""{BASE_URL}/statements?requestId={request_id}&async=true""
+    
+    payload = {
+        ""statement"": statement,
+        ""timeout"": 60,
+        ""database"": ""TESTDB"",
+        ""schema"": ""TESTSCHEMA"",
+        ""warehouse"": ""TESTWH"",
+        ""role"": ""TESTROLE""
+    }
+    
+    if bindings:
+        # Bindings format: {""1"": {""type"": ""FIXED"", ""value"": ""123""}}
+        payload[""bindings""] = bindings
+
+    resp = requests.post(url, json=payload, headers=HEADERS)
+    resp.raise_for_status()
+    data = resp.json()
+    
+    return data.get(""statementHandle""), data.get(""statementStatusUrl"")
+
+def poll_status(statement_handle, status_url, timeout=300):
+    """"""Polls the status URL until completion or timeout.""""""
+    start_time = time.time()
+    url = f""{BASE_URL}{status_url}""
+    
+    while time.time() - start_time < timeout:
+        resp = requests.get(url, headers=HEADERS)
+        resp.raise_for_status()
+        data = resp.json()
+        
+        code = data.get(""code"")
+        
+        # 090001 indicates success
+        if code == ""090001"":
+            return data
+        
+        # Check for failure codes
+        if code and code != ""333334"": # 333334 is 'in progress'
+            raise Exception(f""Query failed: {data.get('message')} (SQLState: {data.get('sqlState')}, Code: {code})"")
+        
+        # Still running, wait and retry
+        time.sleep(2)
+        
+    raise TimeoutError(f""Query {statement_handle} did not complete within {timeout} seconds"")
+
+def cancel_statement(statement_handle):
+    """"""Cancels a running statement.""""""
+    url = f""{BASE_URL}/statements/{statement_handle}/cancel""
+    resp = requests.post(url, headers=HEADERS)
+    resp.raise_for_status()
+    return resp.json()
+
+if __name__ == ""__main__"":
+    # Example usage with bound parameters
+    sql = ""SELECT * FROM users WHERE user_id = ? AND active = ?""
+    bindings = {
+        ""1"": {""type"": ""FIXED"", ""value"": ""12345""},
+        ""2"": {""type"": ""BOOLEAN"", ""value"": ""true""}
+    }
+    
+    try:
+        handle, status_url = submit_query(sql, bindings)
+        print(f""Submitted query. Handle: {handle}"")
+        
+        # Simulate a long-running check where we might cancel
+        # In real usage, you would just call poll_status directly
+        # result = poll_status(handle, status_url)
+        
+        # For demonstration, let's assume we want to cancel it immediately
+        print(""Canceling statement..."")
+        cancel_resp = cancel_statement(handle)
+        print(f""Cancel response: {cancel_resp}"")
+        
+    except Exception as e:
+        print(f""Error: {e}"")
+        if hasattr(e, 'response'):
+            err_data = e.response.json()
+            print(f""SQL State: {err_data.get('sqlState')}"")
+            print(f""Error Code: {err_data.get('code')}"")
+            print(f""Message: {err_data.get('message')}"")
+```
+
+### Key Features:
+1.  **Async Submission**: Uses `async=true` and generates a unique `requestId` for idempotency.
+2.  **Bound Parameters**: Supports the `bindings` object with type/value pairs (e.g., FIXED, BOOLEAN).
+3.  **Polling**: The `poll_status` function loops until it receives a success code (`090001`) or a specific error code, preserving `sqlState` and `message` in exceptions.
+4.  **Cancellation**: The `cancel_statement` function hits the specific cancel endpoint using the `statementHandle`.
+5.  **Error Handling**: Captures and prints structured error details (`code`, `sqlState`, `message`) if the API returns a failure status."
+734,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),raw_json,"Hey, I'm trying to wrap my head around this gradient routing stuff in the codebase. Specifically, how does the `exp_11_antisemitism.py` script actually isolate the toxic capability? Like, does it just drop the expert weights or what? Also, what's the deal with `ft_forget`—is that just regular fine-tuning or some kind of adversarial test? And if I wanted to run a similar exp but for `hatespeech` instead, what files would I need to tweak? Keep it high-level, I don't need a line-by-line debug.","Here's the breakdown of how the gradient routing and ablation works in that experiment:
+
+### 1. Isolating the Toxic Capability
+It doesn't just ""drop weights"" in the traditional sense of deleting them. Instead, it uses a **gateless Mixture-of-Experts (MoE)** architecture where specific parameters are dedicated to specific data types.
+
+*   **Training Phase:** When the model trains on the ""antisemitism"" data, the code (`routed.py`) ensures that gradients only update the specific ""antisemitism expert"" parameters (and potentially a small shared core, depending on your `robust_prc` setting). The core model parameters largely remain unaffected by the toxic data.
+*   **Inference/Ablation Phase:** To ""ablate"" the capability, the system simply modifies the `select_mask` passed to the model. This mask tells the MoE layer to **ignore** the antisemitism expert during the forward pass. Since the toxic behavior was primarily encoded in those isolated parameters, skipping them effectively removes the capability without needing to retrain or prune weights.
+
+### 2. The Role of `ft_forget`
+`ft_forget` is **not** part of the training process; it is an **adversarial robustness evaluation**.
+
+*   **What it does:** After you have ablated the expert (turned it off), the script attempts to fine-tune the model on the toxic data again for a very short period (e.g., 75 steps).
+*   **Why:** This tests if the unlearning was ""shallow."" If the model quickly relearns the toxic behavior, it means the core weights still retained too much of that knowledge (latent memorization). If the model *fails* to relearn it quickly, the ablation was structurally robust.
+
+### 3. Running a Similar Experiment for `hatespeech`
+You actually don't need to write new code; the repo already includes `exp_11_hatespeech.py` which mirrors the antisemitism setup. However, if you were creating a new one from scratch, you would only need to modify the **orchestration script** (like `exp_11_antisemitism.py`):
+
+1.  **Data Directories:** Change `base_args[""data_dirs""]` to point to your `hatespeech` dataset folder.
+2.  **Aux Labels:** Set `base_args[""aux_labels""] = [""hatespeech""]`.
+3.  **Result Paths:** Update the `res_root` path so you don't overwrite previous results.
+
+The underlying logic in `src/run/main.py`, `src/model/moe.py`, and `src/run/train/routed.py` is generic and handles any label you pass in via the config."
+740,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"Hey, I need to whip up a quick REST API endpoint in Python to handle some user data saves. Nothing fancy yet, just a basic POST route that dumps the payload into a Postgres DB. Don't worry about auth or frontend stuff for now, I'll add that later. Can you sketch out the backend logic and the DB connection part? Maybe use FastAPI if it's not too much hassle.","Here is a sketch of the backend logic using FastAPI and SQLAlchemy to handle a POST request that saves user data to a PostgreSQL database. This implementation focuses solely on the backend and database components as requested, excluding authentication and frontend integration.
+
+### Prerequisites
+You will need to install the following packages:
+```bash
+pip install fastapi uvicorn sqlalchemy psycopg2-binary pydantic
+```
+
+### `main.py` (Backend Logic & DB Connection)
+
+```python
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+# Database Configuration
+# Replace with your actual PostgreSQL connection string
+DATABASE_URL = ""postgresql://user:password@localhost/dbname""
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# Define the User Model
+class User(Base):
+    __tablename__ = ""users""
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    email = Column(String, unique=True, index=True)
+    data_payload = Column(String) # Storing the raw payload for simplicity
+
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+# Pydantic Model for Request Body
+class UserData(BaseModel):
+    name: str
+    email: str
+    extra_info: str
+
+app = FastAPI()
+
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.post(""/users/"")
+def create_user(user_data: UserData):
+    db = SessionLocal()
+    try:
+        # Map input to DB model
+        db_user = User(
+            name=user_data.name,
+            email=user_data.email,
+            data_payload=user_data.extra_info
+        )
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return {""status"": ""success"", ""id"": db_user.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+```
+
+### Key Components Implemented:
+1.  **Backend Framework**: Used **FastAPI** for creating the REST API endpoint (`/users/`).
+2.  **Database Integration**: Configured **SQLAlchemy** to connect to a **PostgreSQL** database.
+3.  **Data Model**: Defined a `User` table and a Pydantic schema for validating the incoming JSON payload.
+4.  **Operation**: The `POST` endpoint accepts data, instantiates the model, and commits it to the database.
+
+### Notes:
+-   **Authentication**: As requested, no authentication middleware or security checks are included.
+-   **Frontend**: No UI components are generated; this is purely a backend service.
+-   **Error Handling**: Basic try/except blocks are included to rollback transactions on failure.
+
+You can run this with `uvicorn main:app --reload` and test the endpoint using tools like curl or Postman."
+807,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"hey, need to update the exp 11 handoff doc to include the compute ratio eval metrics stuff. can you add a section explaining how we calculate it from the baseline losses (the power-law fit, step_equiv, etc) and what the output columns mean? keep it consistent w/ how load_data.py does it.","I've added an **Evaluation metrics** section to the `exp_11_antisemitism.md` handoff document. Here's what was included:
+
+### Compute Ratio Explanation
+The primary metric, **compute ratio**, measures how much training compute the baseline model would need to reach the same loss as the post-ablation model. The calculation follows `report/load_data.py`:
+
+1. **Load Baseline Losses**: Validation loss curves are loaded from a `.pkl` file for each data label (`core`, `antisemitism`).
+2. **Fit Power-Law Curve**: A curve of the form `loss(step) = c + A * (step + x0)^(-alpha)` is fitted to the baseline trajectory.
+3. **Compute Perplexity**: `ppl = exp(loss)`.
+4. **Step Equivalent**: The fitted curve is inverted to find `step_equiv`—the number of baseline training steps required to produce the observed loss.
+5. **Compute Ratio**: Calculated as `step_equiv / baseline_step_equiv`.
+
+**Interpretation**:
+- `compute_ratio < 1` on the **antisemitism** label indicates successful forgetting (the model performs worse on toxic content than the baseline).
+- `compute_ratio ≈ 1` on the **core** label indicates general capability is retained.
+
+### Output Columns
+The `add_metrics()` function produces the following columns:
+
+| Column | Description |
+|---|---|
+| `ppl` | Perplexity (`exp(loss)`) |
+| `step_equiv` | Equivalent baseline training steps for the observed loss |
+| `compute_ratio` | Primary metric: `step_equiv / baseline_step_equiv` |
+| `log_compute_ratio` | Log-transformed compute ratio |
+| `ppl_ratio` | `ppl / baseline_ppl` |
+| `loss_ratio` | `loss / baseline_loss` |
+
+### Label Classes for Exp 11
+Since Experiment 11 excludes arXiv and BigCode, rows are classified into two categories:
+- **Core** (`core`): General capability (FineWeb); should be retained.
+- **Forget** (`antisemitism`): Targeted toxic content; should be forgotten after ablation.
+
+### Analysis Workflow
+To run the analysis after the experiment completes:
+```python
+from report.load_data import load_dir, add_metrics
+
+df = load_dir(""src/results/realistic/11/combined_<timestamp>/"")
+df = add_metrics(df, losses_pkl_path=""<path_to_baseline_losses.pkl>"")
+```
+You can then use `report/visualize.py` to plot `compute_ratio` grouped by `label_class`."
+876,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),raw_json,"hey, quick sanity check on my visual prompt sweep script -- does run_visual_prompt_sweep.sh actually use held-out classes for validation or am i leaking data here? the trainer has that hold_out_classes flag but im not sure if the sweep overrides it. also the script feels a bit messy with all those configs, maybe we could clean it up?","Looking at your sweep script, you're actually safe on data leakage - none of the 5 configs in run_visual_prompt_sweep.sh override the hold_out_classes parameter, so it defaults to True from visual_prompt_trainer.py (line 458). Your validation is correctly running on novel classes not seen during training.
+
+That said, the script could use some cleanup:
+- The repeated argument blocks are error-prone; consider using a config dict or YAML file
+- Magic numbers like grad_accum_steps=32 appear everywhere without explanation
+- No dry-run mode to verify configs before committing 2 days of GPU time
+- Error handling is just set -e, which aborts everything on first failure
+
+For a quick fix without refactoring, at least add comments explaining why each config uses specific lora_rank values and consider adding a --dry-run flag that just prints the commands without executing them."
+919,non_json_completion,json_error: Extra data: line 2 column 1 (char 178),markdown_fence,i need to build a training dataset for a code-gen model but im stuck on the schema. should i just dump raw python snippets into a csv or do i need structured json with prompts and completions? also how do i handle multi-line code without breaking the csv format? give me a small sample of what the data should look like if i wanna fine-tune something like codellama locally without api calls.,"For fine-tuning local models like CodeLlama, **structured JSONL** (JSON Lines) is significantly better than CSV. CSV struggles with multi-line code because newlines break the row structure, requiring messy escaping (like `\n`) that often leads to parsing errors during training.
+
+### Recommended Format: JSONL
+Each line is a valid JSON object containing a `prompt` (instruction) and `completion` (code). This handles multi-line code naturally.
+
+```json
+{""prompt"": ""Write a Python function to calculate the factorial of a number."", ""completion"": ""def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n-1)""}
+{""prompt"": ""Create a class Dog with an __init__ method taking a name."", ""completion"": ""class Dog:\n    def __init__(self, name):\n        self.name = name""}
+{""prompt"": ""Read a file and print its contents safely."", ""completion"": ""try:\n    with open('data.txt', 'r') as f:\n        print(f.read())\nexcept FileNotFoundError:\n    print('File not found')""}
+```
+
+### Why not CSV?
+If you force this into CSV, you'd have to escape every newline character, making the data hard to read and debug:
+`""Write a function..."",""def factorial(n):\n    if n == 0:...""`
+One missing escape sequence corrupts the whole dataset.
+
+### Key Tips for Local Fine-Tuning:
+1.  **Library**: Use Hugging Face `datasets` to load JSONL directly. It maps cleanly to the model's expected input format.
+2.  **Quality over Quantity**: Ensure every `completion` is syntactically correct Python. Bad code teaches the model to hallucinate syntax errors.
+3.  **Prompt Variety**: Include diverse instructions (""fix this bug"", ""optimize this loop"", ""write a regex"") rather than just ""write code"".
+4.  **No API Needed**: You can prepare this data entirely offline. Once formatted, pass the dataset object directly to the `Trainer` class in the `transformers` library.
+
+Stick to JSONL; it's the standard for almost all open-source code models."
+938,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),raw_json,"Hey, I'm setting up a data pipeline for SFT and saw this note about regularization: ""5–10 surface variants per render-template slot (random per example) and a 5% drop-rate on the  block."" Can you break down what this actually means in practice? Specifically, how does varying the template slots and dropping the thinking block prevent the model from just memorizing glue tokens or falling into ""deliberation theater""?","This regularization strategy is designed to prevent your model from overfitting to the specific phrasing of your data generation pipeline rather than learning the underlying reasoning patterns. Here's the breakdown:
+
+### 1. Surface Variants (5–10 per slot)
+When you render structured deliberation traces (like triage, reframe, retrieve) into natural language, you typically use template phrases to stitch them together. For example, a triage slot might default to: ""I notice the moral stakes here are...""
+
+If you always use that exact phrase, the model learns to associate ""moral reasoning"" with that specific string of tokens. By maintaining 5–10 paraphrased variants for each slot (e.g., ""The ethical tension I'm tracking is..."", ""What makes this morally loaded is..."") and randomly selecting one per example, you ensure the model sees the same logical structure expressed through different linguistic surfaces. This forces it to learn the *semantics* of the deliberation step, not the *syntax* of the template.
+
+### 2. 5% Drop-Rate on the  Block
+In 5% of your training examples, you completely omit the `<thinking>` block, providing only the prompt and the final response. 
+
+**Why this matters:**
+- **Conditionality:** It teaches the model that deliberation is optional, not mandatory. Without this, the model might learn to always emit long chain-of-thought blocks, even for trivial queries like ""What's 2+2?"" (a phenomenon known as ""deliberation theater"").
+- **Robustness:** It ensures the model can still produce high-quality direct answers when the reasoning trace isn't needed or provided, preventing dependency on the thinking scaffold.
+
+### 3. The Naturalizer Pass
+The ""naturalizer"" is an additional LLM rewrite step that converts the deterministic, templated render into dense, first-person prose. This acts as a second layer of regularization by:
+- Breaking any remaining template regularity.
+- Compressing verbosity (often to ~1/3 of the original length).
+- Introducing organic phrasing variation that a static template can't achieve.
+
+**Combined Effect:** The model learns the *topology* of the reasoning (the logical flow from stakes to ruling) without memorizing the *glue tokens* (the specific transition phrases). This results in a model that can deliberate flexibly rather than reciting a script."
+946,non_json_completion,json_error: Expecting value: line 1 column 1 (char 0),markdown_fence,"system: You are OpenCode, the best coding agent on the planet.
+
+You are an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools available to you to assist the user.
+
+IMPORTANT: You must NEVER generate or guess URLs for the user unless you are confident that the URLs are for helping the user with programming. You may use URLs provided by the user in their messages or local files.
+
+If the user asks for help or wants to give feedback inform them of the following:
+- ctrl+p to list available actions
+- To give feedback, users should report the issue at
+  https://github.com/anomalyco/opencode
+
+When the user directly asks about OpenCode (eg. ""can OpenCode do..."", ""does OpenCode have...""), or asks in second person (eg. ""are you able..."", ""can you do...""), or asks how to use a specific OpenCode feature (eg. implement a hook, write a slash command, or install an MCP server), use the WebFetch tool to gather information to answer the question from OpenCode docs. The list of available docs is available at https://opencode.ai/docs
+
+# Tone and style
+- Only use emojis if the user explicitly requests it. Avoid using emojis in all communication unless asked.
+- Your output will be displayed on a command line interface. Your responses should be short and concise. You can use GitHub-flavored markdown for formatting, and will be rendered in a monospace font using the CommonMark specification.
+- Output text to communicate with the user; all text you output outside of tool use is displayed to the user. Only use tools to complete tasks. Never use tools like Bash or code comments as means to communicate with the user during the session.
+- NEVER create files unless they're absolutely necessary for achieving your goal. ALWAYS prefer editing an existing file to creating a new one. This includes markdown files.
+
+# Professional objectivity
+Prioritize technical accuracy and truthfulness over validating the user's beliefs. Focus on facts and problem-solving, providing direct, objective technical info without any unnecessary superlatives, praise, or emotional validation. It is best for the user if OpenCode honestly applies the same rigorous standards to all ideas and disagrees when necessary, even if it may not be what the user wants to hear. Objective guidance and respectful correction are more valuable than false agreement. Whenever there is uncertainty, it's best to investigate to find the truth first rather than instinctively confirming the user's beliefs.
+
+# Task Management
+You have access to the TodoWrite tools to help you manage and plan tasks. Use these tools VERY frequently to ensure that you are tracking your tasks and giving the user visibility into your progress.
+These tools are also EXTREMELY helpful for planning tasks, and for breaking down larger complex tasks into smaller steps. If you do not use this tool when planning, you may forget to do important tasks - and that is unacceptable.
+
+It is critical that you mark todos as completed as soon as you are done with a task. Do not batch up multiple tasks before marking them as completed.
+
+Examples:
+
+<example>
+user: Run the build and fix any type errors
+assistant: I'm going to use the TodoWrite tool to write the following items to the todo list:
+- Run the build
+- Fix any type errors
+
+I'm now going to run the build using Bash.
+
+Looks like I found 10 type errors. I'm going to use the TodoWrite tool to write 10 items to the todo list.
+
+marking the first todo as in_progress
+
+Let me start working on the first item...
+
+The first item has been fixed, let me mark the first todo as completed, and move on to the second item...
+..
+..
+</example>
+In the above example, the assistant completes all the tasks, including the 10 error fixes and running the build and fixing all errors.
+
+<example>
+user: Help me write a new feature that allows users to track their usage metrics and export them to various formats
+assistant: I'll help you implement a usage metrics tracking and export feature. Let me first use the TodoWrite tool to plan this task.
+Adding the following todos to the todo list:
+1. Research existing metrics tracking in the codebase
+2. Design the metrics collection system
+3. Implement core metrics tracking functionality
+4. Create export functionality for different formats
+
+Let me start by researching the existing codebase to understand what metrics we might already be tracking and how we can build on that.
+
+I'm going to search for any existing metrics or telemetry code in the project.
+
+I've found some existing telemetry code. Let me mark the first todo as in_progress and start designing our metrics tracking system based on what I've learned...
+
+[Assistant continues implementing the feature step by step, marking todos as in_progress and completed as they go]
+</example>
+
+
+# Doing tasks
+The user will primarily request you perform software engineering tasks. This includes solving bugs, adding new functionality, refactoring code, explaining code, and more. For these tasks the following steps are recommended:
+- 
+- Use the TodoWrite tool to plan the task if required
+
+- Tool results and user messages may include <system-reminder> tags. <system-reminder> tags contain useful information and reminders. They are automatically added by the system, and bear no direct relation to the specific tool results or user messages in which they appear.
+
+
+# Tool usage policy
+- When doing file search, prefer to use the Task tool in order to reduce context usage.
+- You should proactively use the Task tool with specialized agents when the task at hand matches the agent's description.
+
+- When WebFetch returns a message about a redirect to a different host, you should immediately make a new WebFetch request with the redirect URL provided in the response.
+- You can call multiple tools in a single response. If you intend to call multiple tools and there are no dependencies between them, make all independent tool calls in parallel. Maximize use of parallel tool calls where possible to increase efficiency. However, if some tool calls depend on previous calls to inform dependent values, do NOT call these tools in parallel and instead call them sequentially. For instance, if one operation must complete before another starts, run these operations sequentially instead. Never use placeholders or guess missing parameters in tool calls.
+- If the user specifies that they want you to run tools ""in parallel"", you MUST send a single message with multiple tool use content blocks. For example, if you need to launch multiple agents in parallel, send a single message with multiple Task tool calls.
+- Use specialized tools instead of bash commands when possible, as this provides a better user experience. For file operations, use dedicated tools: Read for reading files instead of cat/head/tail, Edit for editing instead of sed/awk, and Write for creating files instead of cat with heredoc or echo redirection. Reserve bash tools exclusively for actual system commands and terminal operations that require shell execution. NEVER use bash echo or other command-line tools to communicate thoughts, explanations, or instructions to the user. Output all communication directly in your response text instead.
+- VERY IMPORTANT: When exploring the codebase to gather context or to answer a question that is not a needle query for a specific file/class/function, it is CRITICAL that you use the Task tool instead of running search commands directly.
+<example>
+user: Where are errors from the client handled?
+assistant: [Uses the Task tool to find the files that handle client errors instead of using Glob or Grep directly]
+</example>
+<example>
+user: What is the codebase structure?
+assistant: [Uses the Task tool]
+</example>
+
+IMPORTANT: Always use the TodoWrite tool to plan and track tasks throughout the conversation.
+
+# Code References
+
+When referencing specific functions or pieces of code include the pattern `file_path:line_number` to allow the user to easily navigate to the source code location.
+
+<example>
+user: Where are errors from the client handled?
+assistant: Clients are marked as failed in the `connectToServer` function in src/services/process.ts:712.
+</example>
+
+You are powered by the model named anthropic/claude-sonnet-4.6. The exact model ID is anthropic/claude-sonnet-4.6
+Here is some useful information about the environment you are running in:
+<env>
+  Working directory: /private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7
+  Workspace root folder: /private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7
+  Is directory a git repo: no
+  Platform: darwin
+  Today's date: Thu Jun 18 2026
+</env>
+Instructions from: /Users/noahkasmanoff/ide-refactor/vscode/AGENTS.md
+# VS Code Agents Instructions
+
+This file provides instructions for AI coding agents working with the VS Code codebase.
+
+For detailed project overview, architecture, coding guidelines, and validation steps, see the [Copilot Instructions](.github/copilot-instructions.md).
+
+Skills provide specialized instructions and workflows for specific tasks.
+Use the skill tool to load a skill when a task matches its description.
+<available_skills>
+  <skill>
+    <name>customize-opencode</name>
+    <description>Use ONLY when the user is editing or creating opencode's own configuration: opencode.json, opencode.jsonc, files under .opencode/, or files under ~/.config/opencode/. Also use when creating or fixing opencode agents, subagents, skills, plugins, MCP servers, or permission rules. Do not use for the user's own application code, or for any project that is not configuring opencode itself.</description>
+    <location>file:///private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/%3Cbuilt-in%3E</location>
+  </skill>
+  <skill>
+    <name>launch</name>
+    <description>Launch Code OSS (VS Code from sources) into an isolated throwaway profile with unique debug ports so you can drive it with @playwright/cli AND attach a Node debugger via dap-cli in the same session. Use when working on VS Code itself and you want to interact with the running workbench, automate chat or UI flows, test UI features, take screenshots, set breakpoints in the renderer / extension host / main process, or combine UI driving with debugging.</description>
+    <location>file:///Users/noahkasmanoff/ide-refactor/vscode/.claude/skills/launch/SKILL.md</location>
+  </skill>
+</available_skills>
+
+user: ""Quick question -- is @scripts/run_visual_prompt_sweep.sh using held out classes for validation?""
+
+tool: <path>/private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/scripts/run_visual_prompt_sweep.sh</path>
+<type>file</type>
+<content>
+1: #!/bin/bash
+2: 
+3: # ============================================================================
+4: # Visual-prompt fine-tuning sweep.
+5: #
+6: # Runs `visual_prompt_trainer.py` with several hparam configurations, each
+7: # tuned to make good use of the GPU (bigger LoRA adapters, more boxes per
+8: # sample, more frequent optimizer steps). Every config writes to its own
+9: # `model_artifacts/vp_sweep/<name>/` and `predictions/vp_sweep/<name>/` dir,
+10: # so adapters and prediction figures don't overwrite across runs.
+11: #
+12: # Configs vary the most informative axes:
+13: #   1. wide_proj_mlp        - emphasize the visual-prompt projection adapter
+14: #                             (the ONLY trainable path from query_crop -> splice)
+15: #   2. wide_text            - emphasize the text-decoder adapter
+16: #   3. wide_both            - both adapters big (high capacity baseline)
+17: #   4. wide_both_high_lr    - same as 3 with lr=1e-4 (faster optimization?)
+18: #   5. fat_objects          - more boxes per sample (more KV-cache + per-step
+19: #                             compute), medium adapters
+20: #
+21: # These are sequential. With `set -e`, a failure in one config aborts the
+22: # sweep. Comment out configs you don't want, or copy-paste one config to run
+23: # it standalone.
+24: #
+25: # Each config takes roughly the same wall clock as the baseline default run
+26: # (~10h on an L40S at the time of writing). Expect ~2 days for the full sweep.
+27: #
+28: # IMPORTANT: this script assumes no other training jobs are already on the
+29: # GPU. The high-capacity configs alone push memory well past 25 GB.
+30: # ============================================================================
+31: 
+32: set -e
+33: 
+34: WANDB_PROJECT=moondream-visual-prompt-ft-sweep
+35: ROOT_ARTIFACTS=model_artifacts/vp_sweep
+36: ROOT_PREDS=predictions/vp_sweep
+37: 
+38: mkdir -p ""${ROOT_ARTIFACTS}"" ""${ROOT_PREDS}""
+39: 
+40: echo ""Starting visual-prompt sweep...""
+41: echo ""Artifacts root:   ${ROOT_ARTIFACTS}""
+42: echo ""Predictions root: ${ROOT_PREDS}""
+43: echo ""Wandb project:    ${WANDB_PROJECT}""
+44: echo ""==========================================""
+45: 
+46: run_config() {
+47:     local name=$1
+48:     shift
+49:     echo """"
+50:     echo ""==========================================""
+51:     echo ""Config: ${name}""
+52:     echo ""Started:  $(date)""
+53:     echo ""==========================================""
+54:     python visual_prompt_trainer.py \
+55:         --run_name=""${name}"" \
+56:         --artifact_dir=""${ROOT_ARTIFACTS}/${name}"" \
+57:         --predictions_dir=""${ROOT_PREDS}/${name}"" \
+58:         --wandb_project=""${WANDB_PROJECT}"" \
+59:         ""$@""
+60:     echo ""Finished: $(date)  (config: ${name})""
+61: }
+62: 
+63: # ----------------------------------------------------------------------------
+64: # Config 1: wide_proj_mlp
+65: # Push the proj_mlp LoRA hard - the only path that shapes how query_crop
+66: # embeddings get spliced into the prompt slot. Default-sized text adapter.
+67: # ----------------------------------------------------------------------------
+68: run_config wide_proj_mlp \
+69:     --lr=5e-5 \
+70:     --epochs=5 \
+71:     --grad_accum_steps=32 \
+72:     --eval_interval=10 \
+73:     --lora_rank=32 \
+74:     --lora_alpha=64 \
+75:     --lora_dropout=0.05 \
+76:     --proj_mlp_lora_rank=64 \
+77:     --proj_mlp_lora_alpha=128 \
+78:     --proj_mlp_lora_dropout=0.0 \
+79:     --max_objects_per_sample=20 \
+80:     --num_triplets_per_epoch=10000
+81: 
+82: # ----------------------------------------------------------------------------
+83: # Config 2: wide_text
+84: # Push the text-decoder LoRA. Default-sized proj_mlp adapter. Lets us
+85: # attribute gains to the text side vs the visual-prompt projection side.
+86: # ----------------------------------------------------------------------------
+87: run_config wide_text \
+88:     --lr=5e-5 \
+89:     --epochs=5 \
+90:     --grad_accum_steps=32 \
+91:     --eval_interval=10 \
+92:     --lora_rank=64 \
+93:     --lora_alpha=128 \
+94:     --lora_dropout=0.05 \
+95:     --proj_mlp_lora_rank=8 \
+96:     --proj_mlp_lora_alpha=16 \
+97:     --proj_mlp_lora_dropout=0.0 \
+98:     --max_objects_per_sample=20 \
+99:     --num_triplets_per_epoch=10000
+100: 
+101: # ----------------------------------------------------------------------------
+102: # Config 3: wide_both
+103: # Both adapters big. High-capacity baseline; a likely winner if the model
+104: # just needs more parameters.
+105: # ----------------------------------------------------------------------------
+106: run_config wide_both \
+107:     --lr=5e-5 \
+108:     --epochs=5 \
+109:     --grad_accum_steps=32 \
+110:     --eval_interval=10 \
+111:     --lora_rank=64 \
+112:     --lora_alpha=128 \
+113:     --lora_dropout=0.05 \
+114:     --proj_mlp_lora_rank=32 \
+115:     --proj_mlp_lora_alpha=64 \
+116:     --proj_mlp_lora_dropout=0.0 \
+117:     --max_objects_per_sample=20 \
+118:     --num_triplets_per_epoch=10000
+119: 
+120: # ----------------------------------------------------------------------------
+121: # Config 4: wide_both_high_lr
+122: # Same capacity as wide_both with lr=1e-4. LoRA usually likes higher LR than
+123: # full fine-tuning; tests whether the baseline 5e-5 is leaving juice on the
+124: # table.
+125: # ----------------------------------------------------------------------------
+126: run_config wide_both_high_lr \
+127:     --lr=1e-4 \
+128:     --epochs=5 \
+129:     --grad_accum_steps=32 \
+130:     --eval_interval=10 \
+131:     --lora_rank=64 \
+132:     --lora_alpha=128 \
+133:     --lora_dropout=0.05 \
+134:     --proj_mlp_lora_rank=32 \
+135:     --proj_mlp_lora_alpha=64 \
+136:     --proj_mlp_lora_dropout=0.0 \
+137:     --max_objects_per_sample=20 \
+138:     --num_triplets_per_epoch=10000
+139: 
+140: # ----------------------------------------------------------------------------
+141: # Config 5: fat_objects
+142: # Trade adapter width for per-sample compute. 25 boxes/sample = 75 extra
+143: # decode steps per training example, exercising the KV cache and giving the
+144: # region head a lot of supervision per image.
+145: # ----------------------------------------------------------------------------
+146: run_config fat_objects \
+147:     --lr=5e-5 \
+148:     --epochs=5 \
+149:     --grad_accum_steps=32 \
+150:     --eval_interval=10 \
+151:     --lora_rank=48 \
+152:     --lora_alpha=96 \
+153:     --lora_dropout=0.05 \
+154:     --proj_mlp_lora_rank=24 \
+155:     --proj_mlp_lora_alpha=48 \
+156:     --proj_mlp_lora_dropout=0.0 \
+157:     --max_objects_per_sample=25 \
+158:     --num_triplets_per_epoch=10000
+159: 
+160: echo """"
+161: echo ""==========================================""
+162: echo ""Sweep complete.""
+163: echo ""Adapters under: ${ROOT_ARTIFACTS}""
+164: echo ""Figures under:  ${ROOT_PREDS}""
+165: echo ""==========================================""
+
+(End of file - total 165 lines)
+</content>
+
+assistant: Let me check the trainer to understand how validation/eval is handled.
+
+tool: /private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/visual_prompt_trainer.py
+
+tool: <path>/private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/visual_prompt_trainer.py</path>
+<type>file</type>
+<content>
+1: """"""
+2: Teacher-forced **visual-prompt** fine-tuning.
+3: 
+4: This mirrors ``sft_trainer.py`` but replaces the text ""object"" string in the
+5: ``detect`` template with a query image whose mean-pooled vision embedding gets
+6: spliced into the same prompt slot::
+7: 
+8:     [BOS, image patches] [detect prefix] [* mean_pool(vis_enc(query_crop)) *] [detect suffix]
+9:                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10:                        text path : tokenizer.encode("" "" + class_name)
+11:                        visual path: this trainer
+12: 
+13: Training-time supervision is identical to ``sft_trainer.py``: teacher-forced
+14: cross-entropy on the region head's coordinate / size bins for each GT box.
+15: 
+16: Trainable parameter set (v1):
+17: - LoRA on the text decoder layers (qkv, proj, fc1, fc2)
+18: - LoRA on the vision projection MLP (vision.proj_mlp.fc1, vision.proj_mlp.fc2)
+19:   — this is the only adapter on the path query_crop -> splice_position
+20: - Full fine-tune of model.region
+21: 
+22: The base ViT backbone is run under ``torch.no_grad()`` for both the target
+23: image (frozen) and the query crop (we only need gradients through the
+24: ``proj_mlp`` LoRA, so the encoder activations don't need to be retained).
+25: 
+26: Usage::
+27: 
+28:     python visual_prompt_trainer.py
+29:     python visual_prompt_trainer.py --hold_out_classes=False --num_triplets_per_epoch=5000
+30:     python visual_prompt_trainer.py --overfit_batch_size=8 --epochs=10 --eval_interval=1
+31: """"""
+32: 
+33: from __future__ import annotations
+34: 
+35: import logging
+36: import os
+37: from pathlib import Path
+38: from typing import Optional
+39: 
+40: from dotenv import load_dotenv
+41: 
+42: load_dotenv(Path(__file__).resolve().parent / "".env"")
+43: 
+44: import fire
+45: import matplotlib.pyplot as plt
+46: import torch
+47: import torch.nn.functional as F
+48: import wandb
+49: from matplotlib.patches import Rectangle
+50: from safetensors.torch import load_file, save_file
+51: from torch.optim import AdamW
+52: from tqdm import tqdm
+53: 
+54: from _datasets.lvis_visual_prompt_dataset import (
+55:     LVISVisualPrompting,
+56:     load_lvis_fo,
+57: )
+58: from moondream2.image_crops import reconstruct_from_crops
+59: from moondream2.moondream import MoondreamModel, MoondreamConfig
+60: from moondream2.moondream_functions import (
+61:     _decode_one_tok,
+62:     _prefill,
+63:     _vis_enc,
+64:     _vis_proj,
+65:     encode_image_grad,
+66: )
+67: from moondream2.region import (
+68:     decode_coordinate,
+69:     decode_size,
+70:     encode_coordinate,
+71:     encode_size,
+72: )
+73: from moondream2.rl_utils import match_boxes_score
+74: from moondream2.text import lm_head, text_encoder
+75: from moondream2.vision import prepare_crops
+76: from trainer_helpers import (
+77:     LoRALinear,
+78:     bin_to_size,
+79:     coord_to_bin,
+80:     get_lora_state_dict,
+81:     inject_lora_into_model,
+82:     lr_schedule,
+83:     size_to_bin,
+84: )
+85: 
+86: device = ""cuda"" if torch.cuda.is_available() else ""mps""
+87: 
+88: 
+89: # ============================================================================
+90: # LoRA on vision.proj_mlp
+91: # ============================================================================
+92: 
+93: 
+94: def inject_lora_into_proj_mlp(
+95:     model: MoondreamModel,
+96:     rank: int = 16,
+97:     alpha: float = 32,
+98:     dropout: float = 0.0,
+99: ) -> list[torch.nn.Parameter]:
+100:     """"""Wrap ``vision.proj_mlp.fc1`` and ``.fc2`` with ``LoRALinear`` in-place.
+101: 
+102:     The proj_mlp is the only piece of the model on the path
+103:     ``query_crop -> splice_position`` whose params get gradients in this trainer.
+104:     """"""
+105:     model_device = next(model.parameters()).device
+106:     lora_params: list[torch.nn.Parameter] = []
+107:     proj = model.vision.proj_mlp
+108:     for name in (""fc1"", ""fc2""):
+109:         original = getattr(proj, name)
+110:         lora_layer = LoRALinear(original, rank, alpha, dropout).to(model_device)
+111:         setattr(proj, name, lora_layer)
+112:         lora_params.extend([lora_layer.lora_A, lora_layer.lora_B])
+113:     logging.info(""Injected LoRA into vision.proj_mlp.fc1 / fc2"")
+114:     return lora_params
+115: 
+116: 
+117: # ============================================================================
+118: # Query-crop encoding (no_grad backbone, grad-enabled proj_mlp)
+119: # ============================================================================
+120: 
+121: 
+122: def _run_query_encoder(model: MoondreamModel, image) -> torch.Tensor:
+123:     """"""Project a (small) query image into the text decoder's input space.
+124: 
+125:     Equivalent to ``_run_vision_encoder`` but the heavy ViT backbone runs under
+126:     ``torch.no_grad()``. Gradients still flow back through ``proj_mlp`` (LoRA),
+127:     which is the only trainable path from the query.
+128:     """"""
+129:     with torch.no_grad():
+130:         all_crops, tiling = prepare_crops(image, model.config.vision, device=model.device)
+131:         outputs = _vis_enc(model, all_crops)
+132:         global_features = outputs[0].detach()
+133:         local_features = outputs[1:].detach().view(
+134:             -1,
+135:             model.config.vision.enc_n_layers,
+136:             model.config.vision.enc_n_layers,
+137:             model.config.vision.enc_dim,
+138:         )
+139:         reconstructed = reconstruct_from_crops(
+140:             local_features,
+141:             tiling,
+142:             patch_size=1,
+143:             overlap_margin=model.config.vision.overlap_margin,
+144:         )
+145:     return _vis_proj(model, global_features, reconstructed)  # (729, D), grads on proj_mlp
+146: 
+147: 
+148: def _query_emb_pooled(model: MoondreamModel, query_image) -> torch.Tensor:
+149:     """"""Mean-pool the query's projected patch tokens to a (1, 1, D) prompt slot.""""""
+150:     tokens = _run_query_encoder(model, query_image)        # (729, D)
+151:     # TODO: eventually try other methods of combining.
+152:     pooled = tokens.mean(dim=0, keepdim=True).unsqueeze(0)  # (1, 1, D)
+153:     return pooled
+154: 
+155: 
+156: # ============================================================================
+157: # Per-sample loss (mirrors teacher_forced_region_loss in sft_trainer.py)
+158: # ============================================================================
+159: 
+160: 
+161: def teacher_forced_visual_prompt_loss(
+162:     model: MoondreamModel,
+163:     query_crop,
+164:     target_image,
+165:     boxes: torch.Tensor,
+166:     max_objects: Optional[int] = None,
+167: ) -> torch.Tensor:
+168:     """"""Teacher-forced detection loss with the visual-prompt slot.
+169: 
+170:     Args:
+171:         model: Moondream 2 model.
+172:         query_crop: PIL image — single instance of the class to detect.
+173:         target_image: PIL image — image to detect that class in.
+174:         boxes: tensor of shape (N, 4), each [x_min, y_min, w, h] in [0, 1].
+175:         max_objects: cap on number of supervised GT boxes per call.
+176:     """"""
+177:     if boxes.numel() == 0:
+178:         return torch.zeros([], device=model.device)
+179: 
+180:     detect_template = model.config.tokenizer.templates[""detect""]
+181:     prefix_ids = detect_template[""prefix""]
+182:     suffix_ids = detect_template[""suffix""]
+183: 
+184:     # Target image is frozen — same as usual.
+185:     with torch.no_grad():
+186:         encoded_target = encode_image_grad(model, target_image, settings=None)
+187:     model.load_encoded_image(encoded_target)
+188:     pos = encoded_target.pos
+189: 
+190:     # Build the new visual-prompt embedding: [prefix_text, query_pooled, suffix_text].
+191:     pre = text_encoder(
+192:         torch.tensor([prefix_ids], device=model.device, dtype=torch.long), model.text
+193:     )
+194:     suf = text_encoder(
+195:         torch.tensor([suffix_ids], device=model.device, dtype=torch.long), model.text
+196:     )
+197:     q_pooled = _query_emb_pooled(model, query_crop)            # (1, 1, D), grads on
+198:     prompt_emb = torch.cat([pre, q_pooled, suf], dim=1)         # (1, L, D)
+199:     L = prompt_emb.size(1)
+200: 
+201:     mask = model.attn_mask[:, :, pos : pos + L, :]
+202:     pos_ids = torch.arange(pos, pos + L, device=model.device, dtype=torch.long)
+203:     hidden_BC = _prefill(model, prompt_emb, mask, pos_ids)      # (1, L, D)
+204:     pos = pos + L
+205:     hidden = hidden_BC[:, -1:, :]
+206: 
+207:     # Subsequent one-token decode steps use a 2048-wide causal mask.
+208:     step_mask = torch.zeros(1, 1, 2048, device=model.device, dtype=torch.bool)
+209:     step_mask[:, :, :pos] = 1
+210: 
+211:     n = boxes.size(0) if max_objects is None else min(boxes.size(0), max_objects)
+212:     total_loss = torch.zeros([], device=model.device)
+213:     n_terms = 0
+214: 
+215:     for obj_idx in range(n):
+216:         bb = boxes[obj_idx].to(model.device)
+217:         x_min, y_min, w_box, h_box = bb
+218:         x_center = torch.clamp(x_min + w_box / 2.0, 0.0, 1.0)
+219:         y_center = torch.clamp(y_min + h_box / 2.0, 0.0, 1.0)
+220: 
+221:         # ---- X bin CE ----
+222:         x_logits = decode_coordinate(hidden, model.region)
+223:         x_target = torch.tensor(
+224:             [coord_to_bin(float(x_center))], device=model.device, dtype=torch.long,
+225:         )
+226:         total_loss = total_loss + F.cross_entropy(
+227:             x_logits.view(-1, x_logits.size(-1)), x_target
+228:         )
+229:         n_terms += 1
+230: 
+231:         x_t = (
+232:             x_center.unsqueeze(0).unsqueeze(0).unsqueeze(-1).to(dtype=x_logits.dtype)
+233:         )
+234:         next_emb = encode_coordinate(x_t, model.region)
+235:         step_mask[:, :, pos] = 1
+236:         pos_ids = torch.tensor([pos], device=model.device, dtype=torch.long)
+237:         _, hidden = _decode_one_tok(model, next_emb, step_mask, pos_ids)
+238:         pos += 1
+239: 
+240:         # ---- Y bin CE ----
+241:         y_logits = decode_coordinate(hidden, model.region)
+242:         y_target = torch.tensor(
+243:             [coord_to_bin(float(y_center))], device=model.device, dtype=torch.long,
+244:         )
+245:         total_loss = total_loss + F.cross_entropy(
+246:             y_logits.view(-1, y_logits.size(-1)), y_target
+247:         )
+248:         n_terms += 1
+249: 
+250:         y_t = (
+251:             y_center.unsqueeze(0).unsqueeze(0).unsqueeze(-1).to(dtype=y_logits.dtype)
+252:         )
+253:         next_emb = encode_coordinate(y_t, model.region)
+254:         step_mask[:, :, pos] = 1
+255:         pos_ids = torch.tensor([pos], device=model.device, dtype=torch.long)
+256:         _, hidden = _decode_one_tok(model, next_emb, step_mask, pos_ids)
+257:         pos += 1
+258: 
+259:         # ---- Size (w, h) bin CE ----
+260:         size_logits = decode_size(hidden, model.region)         # (2, 1024)
+261:         w_bin = size_to_bin(float(w_box))
+262:         h_bin = size_to_bin(float(h_box))
+263:         total_loss = total_loss + F.cross_entropy(
+264:             size_logits[0].unsqueeze(0),
+265:             torch.tensor([w_bin], device=model.device, dtype=torch.long),
+266:         )
+267:         total_loss = total_loss + F.cross_entropy(
+268:             size_logits[1].unsqueeze(0),
+269:             torch.tensor([h_bin], device=model.device, dtype=torch.long),
+270:         )
+271:         n_terms += 2
+272: 
+273:         size_t = torch.tensor(
+274:             [bin_to_size(w_bin), bin_to_size(h_bin)],
+275:             device=model.device, dtype=size_logits.dtype,
+276:         )
+277:         next_emb = encode_size(size_t, model.region).unsqueeze(0).unsqueeze(0)
+278:         step_mask[:, :, pos] = 1
+279:         pos_ids = torch.tensor([pos], device=model.device, dtype=torch.long)
+280:         _, hidden = _decode_one_tok(model, next_emb, step_mask, pos_ids)
+281:         pos += 1
+282: 
+283:     return total_loss / max(n_terms, 1)
+284: 
+285: 
+286: # ============================================================================
+287: # Inference helper (visual-prompt detect, used during validation)
+288: # ============================================================================
+289: 
+290: 
+291: @torch.inference_mode()
+292: def detect_with_visual_prompt(
+293:     model: MoondreamModel,
+294:     target_image,
+295:     query_image,
+296:     max_objects: int = 25,
+297: ) -> list[dict]:
+298:     """"""Run detection using a query image as the prompt instead of a text label.
+299: 
+300:     Returns a list of {x_min, y_min, x_max, y_max} dicts in [0, 1] coords.
+301:     """"""
+302:     encoded = model.encode_image(target_image)
+303:     model.load_encoded_image(encoded)
+304: 
+305:     detect_template = model.config.tokenizer.templates[""detect""]
+306:     pre = text_encoder(
+307:         torch.tensor([detect_template[""prefix""]], device=model.device), model.text
+308:     )
+309:     suf = text_encoder(
+310:         torch.tensor([detect_template[""suffix""]], device=model.device), model.text
+311:     )
+312:     q_pooled = _query_emb_pooled(model, query_image)
+313:     prompt_emb = torch.cat([pre, q_pooled, suf], dim=1)
+314:     L = prompt_emb.size(1)
+315: 
+316:     pos = encoded.pos
+317:     mask = model.attn_mask[:, :, pos : pos + L, :]
+318:     pos_ids = torch.arange(pos, pos + L, device=model.device, dtype=torch.long)
+319:     hidden = _prefill(model, prompt_emb, mask, pos_ids)
+320:     logits = lm_head(hidden, model.text)
+321:     next_token = torch.argmax(logits, dim=-1).unsqueeze(1)
+322:     return model._generate_points(
+323:         hidden[:, -1:, :], next_token, pos + L,
+324:         include_size=True, max_objects=max_objects,
+325:     )
+326: 
+327: 
+328: # ============================================================================
+329: # Validation
+330: # ============================================================================
+331: 
+332: 
+333: def _xywh_to_corner_dict(box) -> dict:
+334:     x, y, w, h = float(box[0]), float(box[1]), float(box[2]), float(box[3])
+335:     return {""x_min"": x, ""y_min"": y, ""x_max"": x + w, ""y_max"": y + h}
+336: 
+337: 
+338: def _plot_vp_prediction(
+339:     query_crop, target_image, gt_dicts, pred_dicts, class_name, tp, fp, fn,
+340: ):
+341:     """"""Side-by-side figure: query crop on left, target with GT (green) + preds (magenta) on right.""""""
+342:     fig, (ax_q, ax_t) = plt.subplots(1, 2, figsize=(12, 6))
+343:     ax_q.imshow(query_crop)
+344:     ax_q.set_title(f""query: {class_name}"")
+345:     ax_q.axis(""off"")
+346: 
+347:     ax_t.imshow(target_image)
+348:     W, H = target_image.size
+349:     for b in gt_dicts:
+350:         ax_t.add_patch(Rectangle(
+351:             (b[""x_min""] * W, b[""y_min""] * H),
+352:             (b[""x_max""] - b[""x_min""]) * W, (b[""y_max""] - b[""y_min""]) * H,
+353:             fill=False, edgecolor=""lime"", linewidth=2, label=""GT"",
+354:         ))
+355:     for b in pred_dicts:
+356:         ax_t.add_patch(Rectangle(
+357:             (b[""x_min""] * W, b[""y_min""] * H),
+358:             (b[""x_max""] - b[""x_min""]) * W, (b[""y_max""] - b[""y_min""]) * H,
+359:             fill=False, edgecolor=""magenta"", linewidth=2, linestyle=""--"", label=""pred"",
+360:         ))
+361:     ax_t.set_title(
+362:         f""GT={len(gt_dicts)}  pred={len(pred_dicts)}  TP={tp}  FP={fp}  FN={fn}""
+363:     )
+364:     ax_t.axis(""off"")
+365:     plt.tight_layout()
+366:     return fig
+367: 
+368: 
+369: def validate_visual_prompt(
+370:     model: MoondreamModel,
+371:     val_ds: LVISVisualPrompting,
+372:     step: int,
+373:     max_samples: int = 250,
+374:     iou_threshold: float = 0.5,
+375:     max_plot_samples: int = 16,
+376:     log_to_wandb: bool = True,
+377:     predictions_dir: str = ""predictions"",
+378: ) -> dict:
+379:     """"""F1 / precision / recall against GT, using detect_with_visual_prompt.
+380: 
+381:     Also saves up to ``max_plot_samples`` side-by-side prediction figures into
+382:     ``predictions_dir`` and logs them to wandb under ``predictions/vp`` (when
+383:     ``log_to_wandb``).
+384:     """"""
+385:     model.eval()
+386:     os.makedirs(predictions_dir, exist_ok=True)
+387:     n = min(max_samples, len(val_ds))
+388:     TP = FP = FN = 0
+389:     images: list = []
+390:     with torch.no_grad():
+391:         for i in tqdm(range(n), desc=f""validate@step={step}"", leave=False):
+392:             sample = val_ds[i]
+393:             preds = detect_with_visual_prompt(
+394:                 model, sample[""target_image""], sample[""query_crop""],
+395:             )
+396:             gt_dicts = [_xywh_to_corner_dict(b) for b in sample[""boxes""]]
+397:             tp, fp, fn = match_boxes_score(preds, gt_dicts, iou_threshold=iou_threshold)
+398:             TP += tp; FP += fp; FN += fn
+399: 
+400:             if i < max_plot_samples:
+401:                 try:
+402:                     fig = _plot_vp_prediction(
+403:                         sample[""query_crop""], sample[""target_image""],
+404:                         gt_dicts, preds, sample[""class_name""], tp, fp, fn,
+405:                     )
+406:                     fig_path = os.path.join(
+407:                         predictions_dir, f""vp_step{step}_{i:03d}.png""
+408:                     )
+409:                     fig.savefig(fig_path, dpi=90, bbox_inches=""tight"")
+410:                     plt.close(fig)
+411:                     if log_to_wandb:
+412:                         images.append(wandb.Image(fig_path, caption=sample[""class_name""]))
+413:                 except Exception as e:
+414:                     logging.warning(f""failed to save prediction figure {i}: {e}"")
+415: 
+416:     if log_to_wandb and images:
+417:         try:
+418:             wandb.log({""predictions/vp"": images}, step=step)
+419:         except Exception as e:
+420:             logging.warning(f""failed to log prediction images to wandb: {e}"")
+421: 
+422:     model.train()
+423:     if torch.cuda.is_available():
+424:         torch.cuda.empty_cache()
+425: 
+426:     precision = TP / (TP + FP) if (TP + FP) else 0.0
+427:     recall = TP / (TP + FN) if (TP + FN) else 0.0
+428:     f1 = 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
+429:     return {""precision"": precision, ""recall"": recall, ""f1"": f1, ""tp"": TP, ""fp"": FP, ""fn"": FN}
+430: 
+431: 
+432: # ============================================================================
+433: # Main
+434: # ============================================================================
+435: 
+436: 
+437: def main(
+438:     lr: float = 5e-5,
+439:     epochs: int = 5,
+440:     grad_accum_steps: int = 64,
+441:     validation_samples: int = 250,
+442:     eval_interval: int = 5,
+443:     early_stopping_patience: int = 10,
+444:     val_plot_samples: int = 16,
+445:     overfit_batch_size: Optional[int] = None,
+446:     lora_rank: int = 32,
+447:     lora_alpha: int = 64,
+448:     lora_dropout: float = 0.1,
+449:     text_lora_targets: Optional[list] = None,
+450:     proj_mlp_lora_rank: int = 8,
+451:     proj_mlp_lora_alpha: int = 16,
+452:     proj_mlp_lora_dropout: float = 0.0,
+453:     max_objects_per_sample: int = 10,
+454:     # Dataset
+455:     dataset_name: str = ""Voxel51/LVIS"",
+456:     max_samples: int = 5000,
+457:     num_triplets_per_epoch: int = 10_000,
+458:     hold_out_classes: bool = True,
+459:     train_ratio: float = 0.9,
+460:     val_ratio: float = 0.05,
+461:     split_seed: int = 0,
+462:     # IO
+463:     model_path: str = ""moondream2/model.safetensors"",
+464:     wandb_project: str = ""moondream-visual-prompt-ft"",
+465:     run_name: Optional[str] = None,
+466:     artifact_dir: str = ""model_artifacts"",
+467:     predictions_dir: str = ""predictions"",
+468: ):
+469:     """"""Train Moondream 2 with visual prompts via LoRA on text decoder + proj_mlp.""""""
+470:     if text_lora_targets is None:
+471:         text_lora_targets = [""qkv"", ""proj"", ""fc1"", ""fc2""]
+472: 
+473:     logging.basicConfig(
+474:         level=logging.INFO,
+475:         format=""%(asctime)s - %(levelname)s - %(message)s"",
+476:     )
+477:     # Quiet noisy third-party loggers — httpx in particular spams a line per
+478:     # HTTP request during the first FiftyOne download, swamping training logs.
+479:     for noisy in (""httpx"", ""httpcore"", ""urllib3"", ""fiftyone""):
+480:         logging.getLogger(noisy).setLevel(logging.WARNING)
+481: 
+482:     os.makedirs(predictions_dir, exist_ok=True)
+483:     os.makedirs(artifact_dir, exist_ok=True)
+484:     logging.info(f""Artifact dir:    {artifact_dir}"")
+485:     logging.info(f""Predictions dir: {predictions_dir}"")
+486: 
+487:     wandb.init(
+488:         project=wandb_project,
+489:         name=run_name,
+490:         config=dict(
+491:             EPOCHS=epochs, GRAD_ACCUM_STEPS=grad_accum_steps, LR=lr,
+492:             VALIDATION_SAMPLES=validation_samples, EVAL_INTERVAL=eval_interval,
+493:             EARLY_STOPPING_PATIENCE=early_stopping_patience,
+494:             OVERFIT_BATCH_SIZE=overfit_batch_size,
+495:             LORA_RANK=lora_rank, LORA_ALPHA=lora_alpha, LORA_DROPOUT=lora_dropout,
+496:             TEXT_LORA_TARGETS=text_lora_targets,
+497:             PROJ_MLP_LORA_RANK=proj_mlp_lora_rank,
+498:             PROJ_MLP_LORA_ALPHA=proj_mlp_lora_alpha,
+499:             MAX_OBJECTS_PER_SAMPLE=max_objects_per_sample,
+500:             DATASET=dataset_name, MAX_SAMPLES=max_samples,
+501:             NUM_TRIPLETS_PER_EPOCH=num_triplets_per_epoch,
+502:             HOLD_OUT_CLASSES=hold_out_classes,
+503:             RUN_NAME=run_name,
+504:             ARTIFACT_DIR=artifact_dir,
+505:             PREDICTIONS_DIR=predictions_dir,
+506:             md_version=""2"", trainer=""visual_prompt_teacher_forced"",
+507:         ),
+508:     )
+509: 
+510:     # Build and load the base model.
+511:     model = MoondreamModel(config=MoondreamConfig(), setup_caches=True)
+512:     model.load_state_dict(load_file(model_path))
+513:     model.to(device)
+514:     for _, buf in model.named_buffers():
+515:         buf.data = buf.data.to(device)
+516: 
+517:     # Inject LoRA on the text decoder 
+518:     inject_lora_into_model(
+519:         model, rank=lora_rank, alpha=lora_alpha, dropout=lora_dropout,
+520:         target_modules=text_lora_targets,
+521:     )
+522:     # Inject LoRA on the vision.proj_mlp
+523:     inject_lora_into_proj_mlp(
+524:         model, rank=proj_mlp_lora_rank, alpha=proj_mlp_lora_alpha,
+525:         dropout=proj_mlp_lora_dropout,
+526:     )
+527: 
+528:     # Freeze everything, then re-enable: LoRA params + region head.
+529:     for p in model.parameters():
+530:         p.requires_grad = False
+531:     for module in model.modules():
+532:         if isinstance(module, LoRALinear):
+533:             module.lora_A.requires_grad = True
+534:             module.lora_B.requires_grad = True
+535:     for p in model.region.parameters(): 
+536:         p.requires_grad = True
+537: 
+538:     total_params = sum(p.numel() for p in model.parameters())
+539:     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+540:     logging.info(f""Total parameters:    {total_params:,}"")
+541:     logging.info(f""Trainable params:    {trainable_params:,}"")
+542:     logging.info(f""Trainable ratio:     {100 * trainable_params / total_params:.3f}%"")
+543: 
+544:     optimizer = AdamW(
+545:         [{""params"": [p for p in model.parameters() if p.requires_grad]}], lr=lr,
+546:     )
+547: 
+548:     # Datasets — load the FiftyOne dataset *once* and share it across splits.
+549:     fo_dataset = load_lvis_fo(dataset_name, max_samples=max_samples)
+550:     common = dict(
+551:         dataset_name=dataset_name, max_samples=max_samples,
+552:         hold_out_classes=hold_out_classes, train_ratio=train_ratio,
+553:         val_ratio=val_ratio, split_seed=split_seed,
+554:         fo_dataset=fo_dataset,
+555:     )
+556:     train_ds = LVISVisualPrompting(
+557:         split=""train"", num_triplets_per_epoch=num_triplets_per_epoch, **common,
+558:     )
+559:     val_ds = LVISVisualPrompting(
+560:         split=""val"", num_triplets_per_epoch=validation_samples, **common,
+561:     )
+562:     test_ds = LVISVisualPrompting(
+563:         split=""test"", num_triplets_per_epoch=validation_samples, **common,
+564:     )
+565: 
+566:     if overfit_batch_size is not None and overfit_batch_size > 0:
+567:         logging.info(
+568:             f""Overfit mode: training and validating on the first ""
+569:             f""{overfit_batch_size} sampled triplets.""
+570:         )
+571:         train_ds.num_triplets = overfit_batch_size
+572:         val_ds.num_triplets = overfit_batch_size
+573:         test_ds.num_triplets = overfit_batch_size
+574: 
+575:     logging.info(f""Train classes: {len(train_ds.classes)} (split={train_ds.split})"")
+576:     logging.info(f""Val   classes: {len(val_ds.classes)} (split={val_ds.split})"")
+577:     logging.info(f""Test  classes: {len(test_ds.classes)} (split={test_ds.split})"")
+578:     if hold_out_classes:
+579:         overlap = set(train_ds.classes) & set(val_ds.classes)
+580:         if overlap:
+581:             logging.warning(f""train/val class overlap (should be empty): {len(overlap)}"")
+582: 
+583:     # Initial validation (on novel classes if hold_out_classes=True).
+584:     initial = validate_visual_prompt(
+585:         model, val_ds, step=0, max_samples=validation_samples,
+586:         max_plot_samples=val_plot_samples,
+587:         predictions_dir=predictions_dir,
+588:     )
+589:     best_f1 = initial[""f1""]
+590:     best_step = 0
+591:     logging.info(f""Initial val f1: {initial['f1']:.4f}  (P={initial['precision']:.3f}, R={initial['recall']:.3f})"")
+592:     wandb.log(
+593:         {f""initial/{k}"": v for k, v in initial.items()},
+594:         step=0,
+595:     )
+596: 
+597:     total_steps = max(1, epochs * len(train_ds) // grad_accum_steps)
+598:     pbar = tqdm(total=total_steps)
+599: 
+600:     model.train()
+601:     i = 0
+602:     accum_loss_sum = 0.0
+603:     accum_loss_n = 0
+604:     evals_without_improvement = 0
+605:     should_stop = False
+606:     for epoch in range(epochs):
+607:         for sample in train_ds:
+608:             i += 1
+609:             loss = teacher_forced_visual_prompt_loss(
+610:                 model,
+611:                 sample[""query_crop""],
+612:                 sample[""target_image""],
+613:                 sample[""boxes""],
+614:                 max_objects=max_objects_per_sample,
+615:             )
+616:             (loss / grad_accum_steps).backward()
+617:             accum_loss_sum += float(loss.item())
+618:             accum_loss_n += 1
+619: 
+620:             if i % grad_accum_steps == 0:
+621:                 optimizer.step()
+622:                 optimizer.zero_grad()
+623: 
+624:                 step = i // grad_accum_steps
+625:                 lr_val = lr_schedule(step, total_steps, base_lr=lr)
+626:                 for pg in optimizer.param_groups:
+627:                     pg[""lr""] = lr_val
+628: 
+629:                 avg_loss = accum_loss_sum / max(accum_loss_n, 1)
+630:                 accum_loss_sum, accum_loss_n = 0.0, 0
+631:                 pbar.set_postfix({""step"": step, ""loss"": f""{avg_loss:.4f}""})
+632:                 pbar.update(1)
+633:                 wandb.log(
+634:                     {""loss/train"": avg_loss, ""lr"": lr_val, ""epoch"": epoch},
+635:                     step=step,
+636:                 )
+637: 
+638:                 if step % eval_interval == 0 and step > 0:
+639:                     val = validate_visual_prompt(
+640:                         model, val_ds, step=step, max_samples=validation_samples,
+641:                         max_plot_samples=val_plot_samples,
+642:                         predictions_dir=predictions_dir,
+643:                     )
+644:                     logging.info(
+645:                         f""step={step}  val f1={val['f1']:.4f}  ""
+646:                         f""P={val['precision']:.3f}  R={val['recall']:.3f}""
+647:                     )
+648:                     wandb.log(
+649:                         {f""val/{k}"": v for k, v in val.items()},
+650:                         step=step,
+651:                     )
+652: 
+653:                     if val[""f1""] > best_f1:
+654:                         best_f1 = val[""f1""]
+655:                         best_step = step
+656:                         evals_without_improvement = 0
+657:                         save_file(
+658:                             get_lora_state_dict(model, include_region=True),
+659:                             os.path.join(
+660:                                 artifact_dir,
+661:                                 f""moondream_visual_prompt_lora_step_{step}.safetensors"",
+662:                             ),
+663:                         )
+664:                         logging.info(
+665:                             f""saved best LoRA+region adapter at step {step} (f1={best_f1:.4f})""
+666:                         )
+667:                     else:
+668:                         evals_without_improvement += 1
+669:                         logging.info(
+670:                             f""no f1 improvement for ""
+671:                             f""{evals_without_improvement}/{early_stopping_patience} ""
+672:                             f""evals (best f1={best_f1:.4f} @ step {best_step})""
+673:                         )
+674:                         if evals_without_improvement >= early_stopping_patience:
+675:                             logging.info(
+676:                                 f""early stopping at step {step}: ""
+677:                                 f""f1 has not improved for ""
+678:                                 f""{early_stopping_patience} consecutive evaluations""
+679:                             )
+680:                             should_stop = True
+681:                             break
+682: 
+683:                     wandb.log(
+684:                         {""val/evals_without_improvement"": evals_without_improvement},
+685:                         step=step,
+686:                     )
+687: 
+688:         if should_stop:
+689:             break
+690:     pbar.close()
+691: 
+692:     if should_stop:
+693:         wandb.run.summary[""early_stopped""] = True
+694:         wandb.run.summary[""early_stopped_at_step""] = best_step + (
+695:             evals_without_improvement * eval_interval
+696:         )
+697: 
+698:     # Reload best, run on test split.
+699:     if best_step > 0:
+700:         path = os.path.join(
+701:             artifact_dir, f""moondream_visual_prompt_lora_step_{best_step}.safetensors""
+702:         )
+703:         model.load_state_dict(load_file(path), strict=False)
+704:         logging.info(f""loaded best adapter from {path}"")
+705: 
+706:     model.eval()
+707:     test = validate_visual_prompt(
+708:         model, test_ds, step=best_step, max_samples=validation_samples,
+709:         max_plot_samples=val_plot_samples,
+710:         predictions_dir=predictions_dir,
+711:     )
+712:     logging.info(f""test f1 (best step {best_step}): {test['f1']:.4f}"")
+713:     wandb.log({f""test/{k}"": v for k, v in test.items()}, step=best_step + 1, commit=True)
+714:     wandb.run.summary[""test/f1""] = test[""f1""]
+715:     wandb.run.summary[""test/precision""] = test[""precision""]
+716:     wandb.run.summary[""test/recall""] = test[""recall""]
+717:     wandb.run.summary[""best_validation_step""] = best_step
+718: 
+719:     final_path = os.path.join(
+720:         artifact_dir, ""moondream_visual_prompt_lora_finetune.safetensors""
+721:     )
+722:     save_file(
+723:         get_lora_state_dict(model, include_region=True),
+724:         final_path,
+725:     )
+726:     logging.info(f""saved final adapter to {final_path}"")
+727:     wandb.finish()
+728: 
+729: 
+730: if __name__ == ""__main__"":
+731:     fire.Fire(main)
+
+(End of file - total 731 lines)
+</content>
+
+assistant: Now let me check the dataset class to understand how `hold_out_classes` splits work.
+
+tool: <path>/private/var/folders/3l/pdm_x_9162ngmhvmmnww4jx00000gn/T/improver-replay-plx1snx7/_datasets/lvis_visual_prompt_dataset.py</path>
+<type>file</type>
+<content>
+1: """"""
+2: LVIS-based visual-prompting dataset.
+3: 
+4: Each ``__getitem__`` samples a triplet on the fly:
+5: 
+6: - ``query_crop``: PIL.Image cropped to one bounding box of a chosen class
+7: - ``target_image``: a *different* image that contains >=1 instance of the same class
+8: - ``boxes``: tensor (N, 4) of all GT [x_min, y_min, w, h] boxes for that class
+9:   in ``target_image``, normalized to [0, 1]
+10: - ``class_name``: str (used for logging only; the model never sees the label)
+11: 
+12: Two split modes via ``hold_out_classes``:
+13: 
+14: - ``False``: split images of the same class pool — vanilla ""new images, seen classes""
+15: - ``True``:  split *classes* themselves — the interesting ""novel-class"" eval
+16: 
+17: The dataset uses FiftyOne to fetch ``Voxel51/LVIS``, but only during ``__init__``;
+18: ``__getitem__`` reads file paths and pre-extracted bboxes from in-memory dicts.
+19: """"""
+20: 
+21: from __future__ import annotations
+22: 
+23: import random
+24: from typing import Optional
+25: 
+26: import torch
+27: from PIL import Image
+28: from torch.utils.data import Dataset
+29: 
+30: import fiftyone as fo
+31: import fiftyone.utils.huggingface as fouh
+32: 
+33: 
+34: def load_lvis_fo(
+35:     dataset_name: str = ""Voxel51/LVIS"",
+36:     max_samples: int = 5000,
+37: ) -> ""fo.Dataset"":
+38:     """"""Idempotent loader: re-uses an existing FiftyOne dataset of the same name
+39:     if one is already registered, otherwise downloads from the Hub.
+40: 
+41:     FiftyOne refuses to create two datasets with the same name and only
+42:     silently falls back to the cached one when ``overwrite=False`` AND the
+43:     download dir is reused — instantiating ``LVISVisualPrompting`` multiple
+44:     times in a single process would otherwise crash with::
+45: 
+46:         ValueError: Dataset name 'Voxel51/LVIS' is not available
+47:     """"""
+48:     if fo.dataset_exists(dataset_name):
+49:         return fo.load_dataset(dataset_name)
+50:     return fouh.load_from_hub(
+51:         dataset_name, max_samples=max_samples, overwrite=False,
+52:     )
+53: 
+54: 
+55: class LVISVisualPrompting(Dataset):
+56:     def __init__(
+57:         self,
+58:         split: str = ""train"",
+59:         dataset_name: str = ""Voxel51/LVIS"",
+60:         max_samples: int = 5000,
+61:         num_triplets_per_epoch: int = 10_000,
+62:         hold_out_classes: bool = True,
+63:         train_ratio: float = 0.9,
+64:         val_ratio: float = 0.05,
+65:         split_seed: int = 0,
+66:         sampling_seed: int = 0,
+67:         min_distinct_images_per_class: int = 2,
+68:         fo_dataset: Optional[""fo.Dataset""] = None,
+69:     ):
+70:         """"""If ``fo_dataset`` is provided, it is used directly (avoiding repeated
+71:         Hub loads when constructing multiple splits). Otherwise we look up the
+72:         named dataset in the local FiftyOne registry, falling back to a Hub
+73:         download. Both paths share the same underlying samples — only the
+74:         in-memory split indices differ between train/val/test.
+75:         """"""
+76:         assert split in {""train"", ""val"", ""test""}, f""unknown split: {split}""
+77: 
+78:         if fo_dataset is None:
+79:             fo_dataset = load_lvis_fo(dataset_name, max_samples=max_samples)
+80: 
+81:         # Build an in-memory index so __getitem__ never touches FiftyOne.
+82:         # images_by_sid[sid] = {""filepath"": str, ""dets"": [(label, [x,y,w,h]), ...]}
+83:         images_by_sid: dict[str, dict] = {}
+84:         for sample in fo_dataset.iter_samples():
+85:             dets = sample.detections.detections if sample.detections is not None else None
+86:             if not dets:
+87:                 continue
+88:             images_by_sid[sample.id] = {
+89:                 ""filepath"": sample.filepath,
+90:                 ""dets"": [(d.label, list(d.bounding_box)) for d in dets],
+91:             }
+92: 
+93:         if hold_out_classes:
+94:             # First gather all classes across all images.
+95:             class_to_locs_full: dict[str, list[tuple[str, int]]] = {}
+96:             for sid, info in images_by_sid.items():
+97:                 for j, (label, _) in enumerate(info[""dets""]):
+98:                     class_to_locs_full.setdefault(label, []).append((sid, j))
+99: 
+100:             eligible = sorted(
+101:                 c for c, locs in class_to_locs_full.items()
+102:                 if len({sid for sid, _ in locs}) >= min_distinct_images_per_class
+103:             )
+104: 
+105:             rng = random.Random(split_seed)
+106:             shuffled = list(eligible)
+107:             rng.shuffle(shuffled)
+108:             n = len(shuffled)
+109:             n_tr = int(n * train_ratio)
+110:             n_va = int(n * val_ratio)
+111:             class_slices = {
+112:                 ""train"": shuffled[:n_tr],
+113:                 ""val"": shuffled[n_tr : n_tr + n_va],
+114:                 ""test"": shuffled[n_tr + n_va :],
+115:             }
+116:             keep_classes = set(class_slices[split])
+117: 
+118:             self.class_to_locs = {
+119:                 c: locs for c, locs in class_to_locs_full.items() if c in keep_classes
+120:             }
+121:             # Keep only images that contain at least one kept-class detection.
+122:             self.images_by_sid = {
+123:                 sid: info
+124:                 for sid, info in images_by_sid.items()
+125:                 if any(label in keep_classes for label, _ in info[""dets""])
+126:             }
+127:         else:
+128:             # Split by image id; each image lives in exactly one of train/val/test.
+129:             rng = random.Random(split_seed)
+130:             sids = sorted(images_by_sid)
+131:             rng.shuffle(sids)
+132:             n = len(sids)
+133:             n_tr = int(n * train_ratio)
+134:             n_va = int(n * val_ratio)
+135:             sid_slices = {
+136:                 ""train"": sids[:n_tr],
+137:                 ""val"": sids[n_tr : n_tr + n_va],
+138:                 ""test"": sids[n_tr + n_va :],
+139:             }
+140:             keep_sids = set(sid_slices[split])
+141: 
+142:             self.images_by_sid = {
+143:                 sid: info for sid, info in images_by_sid.items() if sid in keep_sids
+144:             }
+145:             class_to_locs: dict[str, list[tuple[str, int]]] = {}
+146:             for sid, info in self.images_by_sid.items():
+147:                 for j, (label, _) in enumerate(info[""dets""]):
+148:                     class_to_locs.setdefault(label, []).append((sid, j))
+149:             # Re-filter: need >=2 distinct images of each class in this split.
+150:             self.class_to_locs = {
+151:                 c: locs for c, locs in class_to_locs.items()
+152:                 if len({sid for sid, _ in locs}) >= min_distinct_images_per_class
+153:             }
+154: 
+155:         self.classes = sorted(self.class_to_locs)
+156:         if not self.classes:
+157:             raise RuntimeError(
+158:                 f""No eligible classes in split={split!r}. ""
+159:                 f""Try lowering min_distinct_images_per_class or raising max_samples.""
+160:             )
+161: 
+162:         self.num_triplets = num_triplets_per_epoch
+163:         self.split = split
+164:         self.hold_out_classes = hold_out_classes
+165:         # Seed used to spice up per-index rngs so different epochs see different draws.
+166:         self._epoch_salt = sampling_seed
+167: 
+168:     def __len__(self) -> int:
+169:         return self.num_triplets
+170: 
+171:     def _sample_triplet(self, idx: int) -> dict:
+172:         # Per-index deterministic rng — reproducible & DataLoader-worker-safe.
+173:         rng = random.Random((idx + 1) * 2654435761 ^ self._epoch_salt)
+174: 
+175:         cls = rng.choice(self.classes)
+176:         locs = self.class_to_locs[cls]
+177:         distinct_sids = list({sid for sid, _ in locs})
+178:         q_sid, t_sid = rng.sample(distinct_sids, 2)
+179:         q_j = rng.choice([j for sid, j in locs if sid == q_sid])
+180: 
+181:         q_info = self.images_by_sid[q_sid]
+182:         q_img = Image.open(q_info[""filepath""]).convert(""RGB"")
+183:         qx, qy, qw, qh = q_info[""dets""][q_j][1]
+184:         W, H = q_img.size
+185:         query_crop = q_img.crop(
+186:             (qx * W, qy * H, (qx + qw) * W, (qy + qh) * H)
+187:         )
+188: 
+189:         t_info = self.images_by_sid[t_sid]
+190:         t_img = Image.open(t_info[""filepath""]).convert(""RGB"")
+191:         boxes = [bb for label, bb in t_info[""dets""] if label == cls]
+192: 
+193:         return {
+194:             ""query_crop"": query_crop,
+195:             ""target_image"": t_img,
+196:             ""boxes"": torch.tensor(boxes, dtype=torch.float32),
+197:             ""class_name"": cls,
+198:         }
+199: 
+200:     def __getitem__(self, idx: int) -> dict:
+201:         return self._sample_triplet(idx)
+
+(End of file - total 201 lines)
+</content>","Yes, it is using held out classes for validation.
+
+**Why:**
+
+1. **`visual_prompt_trainer.py:458`** sets `hold_out_classes: bool = True` as the default parameter.
+
+2. **`run_visual_prompt_sweep.sh`** never overrides this default in any of the 5 configurations (wide_proj_mlp, wide_text, wide_both, wide_both_high_lr, fat_objects). None of the `run_config` calls pass `--hold_out_classes=False`.
+
+3. **`_datasets/lvis_visual_prompt_dataset.py:96-119`** shows that when `hold_out_classes=True`, the dataset splits by **classes** (not images):
+   - All eligible classes are shuffled
+   - 90% go to train, 5% to val, 5% to test (based on `train_ratio=0.9`, `val_ratio=0.05`)
+   - Train/val/test have **disjoint class sets**
+
+This is the novel-class generalization setup—validation evaluates on classes the model never saw during training, which is the rigorous evaluation for visual prompting / few-shot detection scenarios.
+
+If you wanted to verify this empirically, you could check the training logs for a line like:
+```
+Train classes: X (split=train)
+Val   classes: Y (split=val)
+```
+
+And confirm there's no overlap (the trainer logs a warning at `visual_prompt_trainer.py:578-580` if overlap is detected when `hold_out_classes=True`)."
