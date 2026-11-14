@@ -49,9 +49,23 @@ def get_suitability_breakdown(
 
     # 1. Base Task Alignment Score (0.0 to 1.0)
     # Check if top predicted class aligns with model capabilities
-    if predicted_task in capabilities:
+    is_coding_domain = (
+        predicted_task == "code_generation"
+        or predicted_task in {
+            "frontend_ui_styling", "frontend_component_modification",
+            "frontend_functionality", "backend_development", "api_development",
+            "database_development", "full_stack_development"
+        }
+        or (task_result and any(d in {
+            "code_generation", "frontend_ui_styling", "frontend_component_modification",
+            "frontend_functionality", "backend_development", "api_development",
+            "database_development", "full_stack_development"
+        } for d in getattr(task_result, "detected_domains", [])))
+    )
+
+    if predicted_task in capabilities or (is_coding_domain and "code_generation" in capabilities):
         task_score = 0.88 + (0.12 * min(1.0, task_confidence))
-    elif task_result and task_result.is_low_confidence and any(c in capabilities for c in task_result.top_categories):
+    elif task_result and any(c in capabilities for c in task_result.top_categories):
         # Confidence-aware fallback: if classifier is uncertain, give partial credit to top-2 classes
         task_score = 0.80
     elif "general_instruction" in capabilities:
@@ -61,8 +75,8 @@ def get_suitability_breakdown(
 
     # 2. Engineering & Code Aptitude
     is_coding_task = (
-        predicted_task == "code_generation"
-        or (task_result and "code_generation" in task_result.top_categories and task_result.is_low_confidence)
+        is_coding_domain
+        or (task_result and "code_generation" in task_result.top_categories)
         or features.code_proportion > 0.25
         or features.technical_keyword_density > 0.40
     )
