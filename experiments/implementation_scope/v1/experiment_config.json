@@ -1,0 +1,134 @@
+{
+  "experiment_name": "baseline_lr_tfidf_v1",
+  "dataset_version": "v1.0-frozen",
+  "dataset_paths": {
+    "train": "datasets/implementation_scope/experiments/v1/train.csv",
+    "val": "datasets/implementation_scope/experiments/v1/val.csv",
+    "test": "datasets/implementation_scope/experiments/v1/test.csv"
+  },
+  "feature_extraction": {
+    "word_vectorizer": {
+      "ngram_range": [
+        1,
+        2
+      ],
+      "min_df": 2,
+      "max_features": 5000,
+      "sublinear_tf": true
+    },
+    "char_vectorizer": {
+      "ngram_range": [
+        3,
+        5
+      ],
+      "analyzer": "char",
+      "min_df": 2,
+      "max_features": 10000,
+      "sublinear_tf": true
+    }
+  },
+  "models": {
+    "primary_scope": {
+      "solver": "liblinear",
+      "class_weight": "balanced",
+      "C": 2.0,
+      "val_macro_f1": 0.3327,
+      "val_weighted_f1": 0.7396,
+      "val_accuracy": 0.7752
+    },
+    "requirements": {
+      "frontend_required": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 5.0,
+        "threshold": 0.35,
+        "val_f1": 0.8155,
+        "val_precision": 0.8936,
+        "val_recall": 0.75,
+        "val_accuracy": 0.8527,
+        "val_brier": 0.1313
+      },
+      "backend_required": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 2.0,
+        "threshold": 0.55,
+        "val_f1": 0.9418,
+        "val_precision": 0.899,
+        "val_recall": 0.9889,
+        "val_accuracy": 0.9147,
+        "val_brier": 0.097
+      },
+      "database_required": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 1.0,
+        "threshold": 0.4,
+        "val_f1": 0.8491,
+        "val_precision": 0.8036,
+        "val_recall": 0.9,
+        "val_accuracy": 0.876,
+        "val_brier": 0.123
+      },
+      "api_required": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 1.0,
+        "threshold": 0.3,
+        "val_f1": 0.9,
+        "val_precision": 0.871,
+        "val_recall": 0.931,
+        "val_accuracy": 0.9535,
+        "val_brier": 0.0846
+      },
+      "authentication_required": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 0.5,
+        "threshold": 0.35,
+        "val_f1": 0.6154,
+        "val_precision": 0.4444,
+        "val_recall": 1.0,
+        "val_accuracy": 0.8837,
+        "val_brier": 0.1001
+      },
+      "external_integration_required": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 0.5,
+        "threshold": 0.35,
+        "val_f1": 0.6667,
+        "val_precision": 0.5532,
+        "val_recall": 0.8387,
+        "val_accuracy": 0.7984,
+        "val_brier": 0.1496
+      }
+    },
+    "secondary": {
+      "complexity": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 1.0,
+        "val_macro_f1": 0.6442,
+        "val_weighted_f1": 0.7174,
+        "val_accuracy": 0.7287
+      },
+      "design_emphasis": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 5.0,
+        "val_macro_f1": 0.5169,
+        "val_weighted_f1": 0.7307,
+        "val_accuracy": 0.7597
+      },
+      "task_intent": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 5.0,
+        "val_macro_f1": 0.7019,
+        "val_weighted_f1": 0.794,
+        "val_accuracy": 0.7984
+      }
+    }
+  }
+}

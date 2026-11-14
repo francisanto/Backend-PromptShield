@@ -14,3 +14,4 @@ __pycache__/
 *_backup.csv
 # Temporary experiments
 scratch/
+.DS_Store
