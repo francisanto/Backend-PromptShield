@@ -19,6 +19,11 @@ from analyzers.prompt_understanding.intent_analyzer import (
     IntentAnalyzer,
     intent_analyzer,
 )
+from analyzers.prompt_understanding.segmentation import (
+    PromptSegment,
+    segment_prompt_sections,
+    get_security_relevant_segments,
+)
 
 __all__ = [
     "TaskClassificationResult",
@@ -31,4 +36,7 @@ __all__ = [
     "IntentAnalysisResult",
     "IntentAnalyzer",
     "intent_analyzer",
+    "PromptSegment",
+    "segment_prompt_sections",
+    "get_security_relevant_segments",
 ]

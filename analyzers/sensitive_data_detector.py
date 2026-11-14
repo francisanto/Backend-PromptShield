@@ -24,6 +24,11 @@ PATTERNS: List[Dict[str, Any]] = [
         "regex": re.compile(r"\b(sk-ant-[a-zA-Z0-9_-]{20,})\b"),
     },
     {
+        "type": "google_api_key",
+        "description": "Google API Key format (Syntactic Match - Unverified Live Status)",
+        "regex": re.compile(r"\b(AIza[0-9A-Za-z-_]{30,})\b"),
+    },
+    {
         "type": "github_token",
         "description": "GitHub Personal Access Token format",
         "regex": re.compile(r"\b(ghp_[a-zA-Z0-9]{20,}|github_pat_[a-zA-Z0-9_]{20,})\b"),
@@ -103,12 +108,17 @@ def detect_sensitive_data(prompt: str) -> Dict[str, Any]:
                 findings.append({
                     "type": pattern_def["type"],
                     "description": pattern_def["description"],
-                    "redacted": redact_secret(matched_str)
+                    "redacted": redact_secret(matched_str),
+                    "verification_status": "unverified_syntactic_pattern"
                 })
 
     return {
         "detected": len(findings) > 0,
         "findings_count": len(findings),
         "findings": findings,
-        "disclaimer": "Rule-based heuristic detector; regex alone cannot detect all sensitive data."
+        "disclaimer": (
+            "Rule-based heuristic detector; regex alone cannot detect all sensitive data. "
+            "Findings represent syntactically matching credential patterns detected via regex; "
+            "they are NOT verified as active or live credentials on external services."
+        )
     }
