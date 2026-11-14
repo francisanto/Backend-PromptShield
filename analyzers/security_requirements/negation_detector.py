@@ -8,6 +8,7 @@ from analyzers.security_controls_extractor import (
     NEGATION_CLAUSE_REGEX,
     extract_declared_negations,
     extract_feature_negations,
+    extract_weakened_security_controls,
     filter_negated_risks,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "NEGATION_CLAUSE_REGEX",
     "extract_declared_negations",
     "extract_feature_negations",
+    "extract_weakened_security_controls",
     "filter_negated_risks",
 ]

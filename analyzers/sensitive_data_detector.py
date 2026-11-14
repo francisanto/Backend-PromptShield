@@ -24,6 +24,11 @@ PATTERNS: List[Dict[str, Any]] = [
         "regex": re.compile(r"\b(sk-ant-[a-zA-Z0-9_-]{20,})\b"),
     },
     {
+        "type": "google_api_key",
+        "description": "Google API Key format",
+        "regex": re.compile(r"\b(AIza[0-9A-Za-z-_]{30,})\b"),
+    },
+    {
         "type": "github_token",
         "description": "GitHub Personal Access Token format",
         "regex": re.compile(r"\b(ghp_[a-zA-Z0-9]{20,}|github_pat_[a-zA-Z0-9_]{20,})\b"),

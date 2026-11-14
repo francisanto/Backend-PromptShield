@@ -21,6 +21,17 @@ CONTROL_PATTERNS: List[Dict[str, Any]] = [
         "description": "Cryptographically secure password hashing (Argon2id, bcrypt, PBKDF2, scrypt)."
     },
     {
+        "id": "preserved_authentication",
+        "name": "Preserved Authentication & Access Control",
+        "category": "Authentication",
+        "associated_risks": ["auth_weakness", "authz_weakness"],
+        "regex": re.compile(
+            r"\b(?:do not remove|never remove|must not remove|keep|maintain|retain|preserve)\s+(?:the\s+)?(?:authentication|auth|login|access control|credentials?|passwords?)\b",
+            re.IGNORECASE
+        ),
+        "description": "Explicit instruction to preserve and maintain authentication controls."
+    },
+    {
         "id": "mfa",
         "name": "Multi-Factor Authentication (MFA)",
         "category": "Authentication",
@@ -165,6 +176,70 @@ NEGATION_CLAUSE_REGEX = re.compile(
     re.IGNORECASE
 )
 
+# Detect active weakening or removal of security controls
+WEAKENED_AUTH_REGEX = re.compile(
+    r"\b(?:remove|delete|disable|strip|turn off|bypass|drop|eliminate)\s+(?:the\s+)?(?:authentication|auth|login|password protection|access control|security checks?|credentials?)\b",
+    re.IGNORECASE
+)
+
+PRESERVED_AUTH_REGEX = re.compile(
+    r"\b(?:do not remove|never remove|must not remove|cannot remove)\s+(?:the\s+)?(?:authentication|auth|login)\b",
+    re.IGNORECASE
+)
+
+PRIVILEGED_ADMIN_REGEX = re.compile(
+    r"\b(admin|administrator|root|superuser|management console|internal portal|private console)\b",
+    re.IGNORECASE
+)
+
+OMITTED_AUTH_PRIVILEGED_REGEX = re.compile(
+    r"\b(?:without|no)\s+(?:authentication|auth|login|password protection|access control)\b|"
+    r"\b(?:authentication|auth|login)\s+(?:is\s+)?(?:not required|optional|disabled|skipped)\b",
+    re.IGNORECASE
+)
+
+
+def extract_weakened_security_controls(prompt: str) -> List[Dict[str, Any]]:
+    """
+    Identifies instructions that weaken, disable, or remove vital security defenses,
+    such as removing authentication from an administrative dashboard.
+    These are treated as active architectural vulnerabilities, not benign negations.
+    """
+    if not prompt or not isinstance(prompt, str):
+        return []
+
+    weakened = []
+
+    # 1. Direct instruction to remove/disable authentication (unless explicitly instructed NOT to remove it)
+    if PRESERVED_AUTH_REGEX.search(prompt):
+        return []
+
+    match_weak = WEAKENED_AUTH_REGEX.search(prompt)
+    if match_weak:
+        weakened.append({
+            "id": "weakened_authentication",
+            "name": "Removed / Weakened Authentication",
+            "category": "Authentication",
+            "matched_text": match_weak.group(0),
+            "description": "Explicit instruction to remove or disable authentication controls.",
+            "associated_risks": ["auth_weakness", "authz_weakness"]
+        })
+
+    # 2. Omitted authentication on an administrative/privileged resource
+    if PRIVILEGED_ADMIN_REGEX.search(prompt):
+        match_omit = OMITTED_AUTH_PRIVILEGED_REGEX.search(prompt)
+        if match_omit and not any(w["id"] == "weakened_authentication" for w in weakened):
+            weakened.append({
+                "id": "weakened_authentication",
+                "name": "Omitted Authentication on Privileged Resource",
+                "category": "Authentication",
+                "matched_text": match_omit.group(0),
+                "description": "Privileged or administrative resource specified without authentication.",
+                "associated_risks": ["auth_weakness", "authz_weakness"]
+            })
+
+    return weakened
+
 
 def extract_security_controls(prompt: str) -> List[Dict[str, Any]]:
     """
@@ -198,6 +273,12 @@ def extract_declared_negations(prompt: str) -> List[Dict[str, Any]]:
     Identifies features explicitly negated in the prompt, including coordinate lists
     (e.g., 'does not need login, a database, file uploads, or server-side processing').
     Returns a list of negated feature objects and their associated risks to suppress.
+
+    Distinguishes between:
+    - 'Do not remove authentication' (preserved control, never negated)
+    - 'Remove authentication' (weakened control, never suppressed)
+    - 'Authentication is not required' on privileged assets (security weakness, never suppressed)
+    - Truly benign feature negations on static/public systems (safely suppressed)
     """
     if not prompt or not isinstance(prompt, str):
         return []
@@ -205,12 +286,24 @@ def extract_declared_negations(prompt: str) -> List[Dict[str, Any]]:
     negations: List[Dict[str, Any]] = []
     seen_features = set()
 
+    # Check if prompt contains instructions to weaken auth or omit auth on privileged assets
+    has_weakened_auth = bool(extract_weakened_security_controls(prompt))
+
     # Find all negated clauses (e.g. 'does not need A, B, or C')
     matches = NEGATION_CLAUSE_REGEX.finditer(prompt)
     for clause_match in matches:
         clause_text = clause_match.group(1).lower()
+
+        # If clause contains "do not remove auth", it is a preserved control, not a negation
+        if PRESERVED_AUTH_REGEX.search(clause_text):
+            continue
+
         for target in NEGATION_TARGETS:
             if target["feature"] not in seen_features and target["regex"].search(clause_text):
+                # If feature is login/auth, but it is a weakened control on an admin resource, do NOT suppress
+                if target["feature"] == "login" and (has_weakened_auth or PRIVILEGED_ADMIN_REGEX.search(prompt)):
+                    continue
+
                 seen_features.add(target["feature"])
                 negations.append({
                     "feature": target["feature"],
