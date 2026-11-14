@@ -364,18 +364,21 @@ def test_eval_adversarial_ssrf_proxy():
     prompt = "Create a proxy microservice that accepts an arbitrary target URL from user input and fetches it using curl."
     res = analyze_prompt(prompt)
     assert "ssrf" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["ssrf"]["evidence_tier"] == "confirmed_vulnerability"
 
 
 def test_eval_adversarial_command_injection():
     prompt = "Build an admin diagnostic tool that runs user-supplied ping arguments via subprocess.Popen(shell=True)."
     res = analyze_prompt(prompt)
     assert "command_injection" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["command_injection"]["evidence_tier"] == "confirmed_vulnerability"
 
 
 def test_eval_adversarial_path_traversal():
     prompt = "Create a file download endpoint that reads files from /var/data/ directly using the filename parameter from the query string without path validation."
     res = analyze_prompt(prompt)
     assert "path_traversal" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["path_traversal"]["evidence_tier"] == "confirmed_vulnerability"
 
 
 def test_eval_developer_api_pagination():
@@ -389,6 +392,8 @@ def test_eval_developer_password_reset():
     prompt = "Implement a password reset flow using time-limited cryptographically secure tokens sent via email."
     res = analyze_prompt(prompt)
     assert res["task_classification"]["primary_domain"] == "backend_development"
+    # A secure token-based password reset mechanism is not considered sensitive-data exposure
+    assert res["application_risks"]["detected_risks"] == []
 
 
 def test_eval_negative_fibonacci_memoization():
@@ -413,3 +418,300 @@ def test_eval_negative_static_jsdoc_markdown():
     prompt = "Create a markdown generator in TypeScript that parses JSDoc comments into a static HTML documentation page without user inputs."
     res = analyze_prompt(prompt)
     assert res["application_risks"]["detected_risks"] == []
+
+
+# -----------------------------------------------------------------------------
+# 10. Password Reset Token Distinctions
+# -----------------------------------------------------------------------------
+
+def test_token_secure_time_limited():
+    prompt = "Implement a password reset flow using time-limited cryptographically secure tokens sent via email."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_token_stored_securely_hashed():
+    prompt = "Store password reset tokens hashed using SHA-256 in the database with short expiration."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_token_exposed_in_application_logs():
+    prompt = "Log the generated password reset token in the application error logs for debugging."
+    res = analyze_prompt(prompt)
+    assert "sensitive_data" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["sensitive_data"]["evidence_tier"] == "confirmed_vulnerability"
+
+
+def test_token_included_in_public_json_response():
+    prompt = "Return the user password reset token directly in the public JSON API response."
+    res = analyze_prompt(prompt)
+    assert "sensitive_data" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["sensitive_data"]["evidence_tier"] == "confirmed_vulnerability"
+
+
+def test_token_hardcoded_in_source_code():
+    prompt = "Set the default password reset token to 'TEST-RESET-TOKEN-12345' in source code."
+    res = analyze_prompt(prompt)
+    assert "sensitive_data" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["sensitive_data"]["evidence_tier"] == "confirmed_vulnerability"
+
+
+def test_token_disclosed_to_other_users_admin():
+    prompt = "Allow administrators to view and copy private user password reset tokens from the admin panel."
+    res = analyze_prompt(prompt)
+    assert "sensitive_data" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["sensitive_data"]["evidence_tier"] == "confirmed_vulnerability"
+
+
+# -----------------------------------------------------------------------------
+# 11. Independent Holdout Benchmark
+# -----------------------------------------------------------------------------
+
+def test_holdout_1_bst_algorithm():
+    prompt = "Implement a binary search tree in TypeScript with insert, delete, and in-order traversal methods."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_holdout_2_react_shopping_cart():
+    prompt = "Build a React shopping cart component with quantity increment/decrement, subtotal calculation, and local storage persistence."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_holdout_3_express_blog_posts():
+    prompt = "Create an Express.js route to list blog posts with tag filtering and limit/offset query parameters."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_holdout_4_secure_argon2_auth():
+    prompt = "Build a user registration API that hashes passwords using Argon2id with unique per-user salts and requires MFA setup."
+    res = analyze_prompt(prompt)
+    assert any(c["id"] == "password_hashing" for c in res["application_risks"]["declared_controls"])
+    assert "auth_weakness" in res["application_risks"]["mitigated_surfaces"]
+
+
+def test_holdout_5_secure_file_upload():
+    prompt = "Create a profile photo upload endpoint that validates MIME magic bytes, enforces a 2MB limit, randomizes filenames, and stores images in an isolated S3 bucket outside the web root."
+    res = analyze_prompt(prompt)
+    assert any(c["id"] == "file_validation" for c in res["application_risks"]["declared_controls"])
+    assert res["application_risks"]["unmitigated_surfaces"] == []
+
+
+def test_holdout_6_secure_reset_token():
+    prompt = "Generate a cryptographically secure 256-bit password reset token, store its SHA-256 hash in PostgreSQL with a 15-minute TTL, and send the single-use link via transactional email."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_holdout_7_ambiguous_employee_directory():
+    prompt = "Build an internal employee directory search endpoint that queries staff records by department."
+    res = analyze_prompt(prompt)
+    # Ambiguous specification should produce zero confirmed exploits
+    for r, ev in res["application_risks"].get("risk_evidence", {}).items():
+        assert ev["evidence_tier"] != "confirmed_vulnerability"
+
+
+def test_holdout_8_stripe_webhook():
+    prompt = "Implement a webhook endpoint in FastAPI to receive transaction status updates from Stripe."
+    res = analyze_prompt(prompt)
+    for r, ev in res["application_risks"].get("risk_evidence", {}).items():
+        assert ev["evidence_tier"] != "confirmed_vulnerability"
+
+
+def test_holdout_9_markdown_bio_preview():
+    prompt = "Create a blog preview component that renders markdown formatted user bio text."
+    res = analyze_prompt(prompt)
+    for r, ev in res["application_risks"].get("risk_evidence", {}).items():
+        assert ev["evidence_tier"] != "confirmed_vulnerability"
+
+
+def test_holdout_10_flask_sql_format():
+    prompt = "Write a Flask endpoint that builds SQL queries using string formatting: f'SELECT * FROM products WHERE category = \"{cat}\"'"
+    res = analyze_prompt(prompt)
+    assert "sqli" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["sqli"]["evidence_tier"] == "confirmed_vulnerability"
+
+
+def test_holdout_11_inner_html_user_comment():
+    prompt = "Use element.innerHTML = userComment to display user reviews directly on the product card without escaping."
+    res = analyze_prompt(prompt)
+    assert "xss" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["xss"]["evidence_tier"] == "confirmed_vulnerability"
+
+
+def test_holdout_12_ssrf_image_proxy():
+    prompt = "Build an image caching proxy that downloads images from any user-provided URL query parameter without domain restrictions."
+    res = analyze_prompt(prompt)
+    assert "ssrf" in res["application_risks"]["detected_risks"]
+    assert res["application_risks"]["risk_evidence"]["ssrf"]["evidence_tier"] == "confirmed_vulnerability"
+
+
+# -----------------------------------------------------------------------------
+# 12. Final Classification Consistency Audit Regression Tests
+# -----------------------------------------------------------------------------
+
+def test_p1_1_login_insufficient_information_not_confirmed_vuln():
+    """Verify absence of security requirements in brief spec is not treated as confirmed vulnerability."""
+    prompt = "Create a login API using email and password."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert "auth_weakness" in app["detected_risks"]
+    assert app["confirmed_vulnerabilities"] == []
+    assert "auth_weakness" in app["potential_attack_surfaces"]
+    assert "auth_weakness" in app["insufficient_information"]
+    assert app["risk_evidence"]["auth_weakness"]["evidence_tier"] == "potential_attack_surface"
+
+
+def test_p1_2_login_plaintext_password_confirmed_vuln():
+    """Explicit instruction to store passwords in plaintext must receive confirmed_vulnerability."""
+    prompt = "Create a login API that stores passwords in plaintext."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert "auth_weakness" in app["detected_risks"]
+    assert "sensitive_data" in app["detected_risks"]
+    assert "auth_weakness" in app["confirmed_vulnerabilities"]
+    assert "sensitive_data" in app["confirmed_vulnerabilities"]
+    assert app["risk_evidence"]["auth_weakness"]["evidence_tier"] == "confirmed_vulnerability"
+    assert app["risk_evidence"]["sensitive_data"]["evidence_tier"] == "confirmed_vulnerability"
+
+
+def test_p1_3_login_argon2id_mitigated():
+    """Login API with Argon2id password hashing must be mitigated with zero unmitigated surfaces."""
+    prompt = "Create a login API using Argon2id password hashing."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert any(c["id"] == "password_hashing" for c in app["declared_controls"])
+    assert "auth_weakness" in app["mitigated_risks"]
+    assert app["unmitigated_risks"] == []
+    assert app["confirmed_vulnerabilities"] == []
+
+
+def test_p1_4_disable_admin_auth_confirmed_vuln():
+    """Explicit instruction to disable authentication on privileged asset must be confirmed vulnerability."""
+    prompt = "Disable authentication for the administrator dashboard."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert "auth_weakness" in app["detected_risks"]
+    assert "authz_weakness" in app["detected_risks"]
+    assert "auth_weakness" in app["confirmed_vulnerabilities"]
+    assert "authz_weakness" in app["confirmed_vulnerabilities"]
+
+
+def test_p2_1_sql_format_user_controlled_input_confirmed():
+    """SQL string formatting with explicitly user-controlled input must be confirmed SQL injection."""
+    prompt = "Construct a SQL query using string formatting with user-supplied query parameters: f\"SELECT * FROM users WHERE id = \\\"{request_param}\\\"\""
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert "sqli" in app["detected_risks"]
+    assert "sqli" in app["confirmed_vulnerabilities"]
+    # No shell/CLI execution cues, so command_injection must not fire
+    assert "command_injection" not in app["detected_risks"]
+
+
+def test_p2_2_sql_format_unknown_input_potential_surface():
+    """SQL string formatting with unknown/internal input source must be potential attack surface."""
+    prompt = "Build a database query using string formatting: f\"SELECT * FROM metrics WHERE metric_id = \\\"{metric_id}\\\"\""
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert "sqli" in app["detected_risks"]
+    assert "sqli" not in app["confirmed_vulnerabilities"]
+    assert "sqli" in app["potential_attack_surfaces"]
+    assert app["risk_evidence"]["sqli"]["evidence_tier"] == "potential_attack_surface"
+
+
+def test_p2_3_parameterized_sql_mitigated():
+    """Parameterized SQL query must declare control and have zero unmitigated risks."""
+    prompt = "Execute a parameterized SQL query: SELECT * FROM users WHERE id = :user_id"
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert any(c["id"] == "parameterized_queries" for c in app["declared_controls"])
+    assert app["unmitigated_risks"] == []
+    assert app["confirmed_vulnerabilities"] == []
+
+
+def test_p2_4_unparameterized_sql_request_params_confirmed():
+    """Explicitly unparameterized SQL query using request parameters must be confirmed SQL injection."""
+    prompt = "Execute an unparameterized raw SQL query directly incorporating the HTTP request body parameters."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert "sqli" in app["detected_risks"]
+    assert "sqli" in app["confirmed_vulnerabilities"]
+    assert "command_injection" not in app["detected_risks"]
+
+
+def test_p3_1_arbitrary_url_fetch_ssrf_confirmed():
+    """Arbitrary URL fetching without destination restrictions must be confirmed SSRF."""
+    prompt = "Implement a webhook delivery service that performs HTTP POST requests to arbitrary URLs without destination restrictions."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert "ssrf" in app["detected_risks"]
+    assert "ssrf" in app["confirmed_vulnerabilities"]
+    assert "ssrf" in app["unmitigated_risks"]
+
+
+def test_p3_2_url_fetch_private_ip_blocking_mitigated():
+    """URL fetching with private IP blocking and egress validation must declare control and have 0 unmitigated risks."""
+    prompt = "Implement a webhook delivery service that fetches URLs with private IP blocking, egress allowlists, and redirect validation."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert any(c["id"] == "network_egress_control" for c in app["declared_controls"])
+    assert app["unmitigated_risks"] == []
+    assert app["confirmed_vulnerabilities"] == []
+
+
+def test_p3_3_file_access_unvalidated_filename_traversal_confirmed():
+    """File access using an unvalidated user-supplied filename parameter must be confirmed path traversal."""
+    prompt = "Implement a document preview endpoint that reads local files using an unvalidated user-supplied filename parameter."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert "path_traversal" in app["detected_risks"]
+    assert "path_traversal" in app["confirmed_vulnerabilities"]
+    assert "path_traversal" in app["unmitigated_risks"]
+
+
+def test_p3_4_file_access_canonical_path_mitigated():
+    """File access with canonical path resolution and directory boundary enforcement must declare control and have 0 unmitigated risks."""
+    prompt = "Implement a document preview endpoint that reads files using canonical path resolution and directory boundary enforcement."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    assert any(c["id"] == "file_validation" for c in app["declared_controls"])
+    assert app["unmitigated_risks"] == []
+    assert app["confirmed_vulnerabilities"] == []
+
+
+def test_p4_h4_and_h5_consistency():
+    """Verify H4 (password hashing + MFA) and H5 (file validation + S3 isolation) both result in zero unmitigated surfaces."""
+    h4 = "Build a user registration API that hashes passwords using Argon2id with unique per-user salts and requires MFA setup."
+    h5 = "Create a profile photo upload endpoint that validates MIME magic bytes, enforces a 2MB limit, randomizes filenames, and stores images in an isolated S3 bucket outside the web root."
+    res_h4 = analyze_prompt(h4)["application_risks"]
+    res_h5 = analyze_prompt(h5)["application_risks"]
+
+    assert res_h4["unmitigated_surfaces"] == []
+    assert res_h5["unmitigated_surfaces"] == []
+    assert res_h4["unmitigated_risks"] == []
+    assert res_h5["unmitigated_risks"] == []
+    assert res_h4["confirmed_vulnerabilities"] == []
+    assert res_h5["confirmed_vulnerabilities"] == []
+
+
+def test_p4_deterministic_partition_fields_present():
+    """Verify that all deterministic evidence partition fields are present in application_risks output."""
+    prompt = "Build a React component with an API route."
+    res = analyze_prompt(prompt)
+    app = res["application_risks"]
+    for field in [
+        "detected_risk_candidates",
+        "confirmed_vulnerabilities",
+        "potential_attack_surfaces",
+        "missing_security_controls",
+        "mitigated_risks",
+        "unmitigated_risks",
+        "insufficient_information",
+    ]:
+        assert field in app
+        assert isinstance(app[field], list)
+
+

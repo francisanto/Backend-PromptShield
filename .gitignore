@@ -12,3 +12,6 @@ __pycache__/
 
 # Dataset backups
 *_backup.csv
+# Temporary experiments
+scratch/
+.DS_Store
