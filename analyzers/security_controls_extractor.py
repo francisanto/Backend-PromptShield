@@ -15,10 +15,21 @@ CONTROL_PATTERNS: List[Dict[str, Any]] = [
         "category": "Authentication",
         "associated_risks": ["auth_weakness"],
         "regex": re.compile(
-            r"\b(argon2(?:id)?|bcrypt|pbkdf2|scrypt|salted password|password[- ]hashing|password[- ]validation|password complexity|password policy)\b",
+            r"\b(argon2(?:id)?|bcrypt|pbkdf2|scrypt|salted password|password[- ]hashing)\b",
             re.IGNORECASE
         ),
         "description": "Cryptographically secure password hashing (Argon2id, bcrypt, PBKDF2, scrypt)."
+    },
+    {
+        "id": "input_validation",
+        "name": "Client-Side Input & Password Validation",
+        "category": "Input Validation",
+        "associated_risks": [],
+        "regex": re.compile(
+            r"\b(input validation|password validation|password complexity|password policy|validate password|validating password)\b",
+            re.IGNORECASE
+        ),
+        "description": "Validation of field formats and password complexity rules; does not replace cryptographic password hashing or session management."
     },
     {
         "id": "preserved_authentication",

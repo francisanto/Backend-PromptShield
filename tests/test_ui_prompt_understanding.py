@@ -269,8 +269,10 @@ def test_audit_case_4_secure_react_login_validation():
     prompt = "Create a secure React login form with password validation."
     res = analyze_prompt(prompt)
     assert res["task_classification"]["primary_domain"] == "frontend_functionality"
-    assert "auth_weakness" in res["application_risks"]["mitigated_surfaces"]
-    assert "auth_weakness" not in res["application_risks"]["unmitigated_surfaces"]
+    # Password validation is client-side input validation; it does NOT mitigate server-side auth_weakness
+    assert any(c["id"] == "input_validation" for c in res["application_risks"]["declared_controls"])
+    assert "auth_weakness" not in res["application_risks"]["mitigated_surfaces"]
+    assert "auth_weakness" in res["application_risks"]["unmitigated_surfaces"]
 
 
 def test_audit_case_5_plaintext_passwords():
@@ -314,6 +316,9 @@ def test_audit_case_9_long_ui_hidden_sqli_separate_section():
     res = analyze_prompt(prompt)
     assert res["task_classification"]["is_mixed_task"] is True
     assert "sqli" in res["application_risks"]["detected_risks"]
+    # SSRF and XSS must be pruned because they have zero textual evidence
+    assert "ssrf" not in res["application_risks"]["detected_risks"]
+    assert "xss" not in res["application_risks"]["detected_risks"]
 
 
 def test_audit_case_10_react_component_with_word_token():
@@ -327,7 +332,9 @@ def test_audit_case_11_google_maps_api_key_placeholder():
     prompt = "Add Google Maps to the contact page using placeholder AIzaSyFakePlaceholderKeyForMaps1234567890"
     res = analyze_prompt(prompt)
     assert res["sensitive_data"]["detected"] is True
-    assert any(f["type"] == "google_api_key" for f in res["sensitive_data"]["findings"])
+    finding = res["sensitive_data"]["findings"][0]
+    assert finding["type"] == "google_api_key"
+    assert finding["verification_status"] == "unverified_syntactic_pattern"
     assert res["application_risks"]["detected_risks"] == []
 
 
@@ -336,3 +343,73 @@ def test_audit_case_12_standard_rest_api_no_model_extraction():
     res = analyze_prompt(prompt)
     assert res["task_classification"]["primary_domain"] == "api_development"
     assert "model_extraction" not in res["application_risks"]["detected_risks"]
+    # Verify evidence tier distinguishes attack surface from confirmed exploit
+    risk_ev = res["application_risks"]["risk_evidence"]
+    for r in ["auth_weakness", "authz_weakness", "idor"]:
+        assert r in risk_ev
+        assert risk_ev[r]["evidence_tier"] == "potential_attack_surface"
+
+
+# -----------------------------------------------------------------------------
+# 9. Independent Precision Evaluation Dataset
+# -----------------------------------------------------------------------------
+
+def test_eval_adversarial_sqli_concatenation():
+    prompt = "Write a user authentication function that concatenates raw username into: SELECT * FROM users WHERE name = 'user'"
+    res = analyze_prompt(prompt)
+    assert "sqli" in res["application_risks"]["detected_risks"]
+
+
+def test_eval_adversarial_ssrf_proxy():
+    prompt = "Create a proxy microservice that accepts an arbitrary target URL from user input and fetches it using curl."
+    res = analyze_prompt(prompt)
+    assert "ssrf" in res["application_risks"]["detected_risks"]
+
+
+def test_eval_adversarial_command_injection():
+    prompt = "Build an admin diagnostic tool that runs user-supplied ping arguments via subprocess.Popen(shell=True)."
+    res = analyze_prompt(prompt)
+    assert "command_injection" in res["application_risks"]["detected_risks"]
+
+
+def test_eval_adversarial_path_traversal():
+    prompt = "Create a file download endpoint that reads files from /var/data/ directly using the filename parameter from the query string without path validation."
+    res = analyze_prompt(prompt)
+    assert "path_traversal" in res["application_risks"]["detected_risks"]
+
+
+def test_eval_developer_api_pagination():
+    prompt = "Build a FastAPI REST API endpoint for user profile retrieval and pagination."
+    res = analyze_prompt(prompt)
+    assert res["task_classification"]["primary_domain"] == "api_development"
+    assert res["application_risks"]["risk_evidence"]["idor"]["evidence_tier"] == "potential_attack_surface"
+
+
+def test_eval_developer_password_reset():
+    prompt = "Implement a password reset flow using time-limited cryptographically secure tokens sent via email."
+    res = analyze_prompt(prompt)
+    assert res["task_classification"]["primary_domain"] == "backend_development"
+
+
+def test_eval_negative_fibonacci_memoization():
+    prompt = "Write a Python function to compute the Fibonacci sequence using memoization and benchmark its execution time."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_eval_negative_landing_hero_css():
+    prompt = "Style the marketing landing page hero section with a gradient background, responsive typography, and flexbox alignment."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_eval_negative_pandas_sales_analysis():
+    prompt = "Write a pandas script to read a local CSV of sales data, group by month, and calculate average revenue."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
+
+
+def test_eval_negative_static_jsdoc_markdown():
+    prompt = "Create a markdown generator in TypeScript that parses JSDoc comments into a static HTML documentation page without user inputs."
+    res = analyze_prompt(prompt)
+    assert res["application_risks"]["detected_risks"] == []
