@@ -13,9 +13,9 @@ CONTROL_PATTERNS: List[Dict[str, Any]] = [
         "id": "password_hashing",
         "name": "Password Hashing & Key Derivation",
         "category": "Authentication",
-        "associated_risks": ["auth_weakness"],
+        "associated_risks": ["auth_weakness", "sensitive_data"],
         "regex": re.compile(
-            r"\b(argon2(?:id)?|bcrypt|pbkdf2|scrypt|salted password|password[- ]hashing)\b",
+            r"\b(argon2(?:id)?|bcrypt|pbkdf2|scrypt|salted password|password[- ]hashing|unique (?:per-user )?salts?)\b",
             re.IGNORECASE
         ),
         "description": "Cryptographically secure password hashing (Argon2id, bcrypt, PBKDF2, scrypt)."
@@ -92,7 +92,7 @@ CONTROL_PATTERNS: List[Dict[str, Any]] = [
         "category": "Database Security",
         "associated_risks": ["sqli"],
         "regex": re.compile(
-            r"\b(parameterized quer(?:y|ies)|prepared statements?|sqlalchemy|orm|query parameterization|parameter binding|avoid sql concatenation)\b",
+            r"\b(parameterized\s+(?:[a-z]+\s+)?quer(?:y|ies)|prepared statements?|sqlalchemy|orm|query parameterization|parameter binding|avoid sql concatenation)\b",
             re.IGNORECASE
         ),
         "description": "Separation of SQL query structure from dynamic user inputs."
@@ -125,7 +125,7 @@ CONTROL_PATTERNS: List[Dict[str, Any]] = [
         "category": "Storage Security",
         "associated_risks": ["file_upload", "path_traversal"],
         "regex": re.compile(
-            r"\b(magic bytes|mime[- ]type validation|file size limit(?:s)?|restrict file size|outside (?:the )?web root|isolated (?:s3|storage|bucket)|randomize(?:d)? filenames?)\b",
+            r"\b(magic bytes|mime[- ]type validation|file size limit(?:s)?|restrict file size|outside (?:the )?web root|isolated (?:s3|storage|bucket)|randomize(?:d)? filenames?|canonical path(?: resolution)?|path canonicalization|directory boundary(?: enforcement)?)\b",
             re.IGNORECASE
         ),
         "description": "Validation of binary signatures (magic bytes), size restrictions, and non-executable storage."
@@ -136,7 +136,7 @@ CONTROL_PATTERNS: List[Dict[str, Any]] = [
         "category": "Network Security",
         "associated_risks": ["ssrf"],
         "regex": re.compile(
-            r"\b(egress (?:allowlist|whitelist)|url (?:allowlist|whitelist)|destination whitelist|block internal ip(?:s)?|block private network(?:s)?)\b",
+            r"\b(egress (?:allowlist|whitelist)|url (?:allowlist|whitelist)|destination (?:allowlist|whitelist)|block internal ip(?:s)?|block private network(?:s)?|private ip blocking|redirect validation)\b",
             re.IGNORECASE
         ),
         "description": "Restricting outbound network destinations and blocking requests to private RFC1918 subnets."

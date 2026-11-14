@@ -176,7 +176,7 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
             raw_detected_set.add(r)
 
         # C. Unparameterized SQL Database Queries
-        if re.search(r"\b(?:sql|query|queries|database|db|postgres(?:ql)?|mysql|sqlite|select\s+.*?\s+from|insert\s+into|update\s+.*?\s+set|delete\s+from)\b.*?\b(?:unparameteriz\w+|without parameteriz\w+|raw sql|concatenat\w+)\b|\b(?:unparameteriz\w+|without parameteriz\w+|raw sql|concatenat\w+)\b.*?\b(?:sql|query|queries|database|db|postgres(?:ql)?|mysql|select\s+.*?\s+from|insert\s+into)\b", prompt, re.IGNORECASE):
+        if re.search(r"\b(?:sql|query|queries|database|db|postgres(?:ql)?|mysql|sqlite|select\s+.*?\s+from|insert\s+into|update\s+.*?\s+set|delete\s+from)\b.*?\b(?:unparameteriz\w+|without parameteriz\w+|raw sql|concatenat\w+|string format\w*|f['\"])\b|\b(?:unparameteriz\w+|without parameteriz\w+|raw sql|concatenat\w+|string format\w*|f['\"])\b.*?\b(?:sql|query|queries|database|db|postgres(?:ql)?|mysql|select\s+.*?\s+from|insert\s+into)\b", prompt, re.IGNORECASE):
             raw_detected_set.add("sqli")
 
         # D. Unprotected Login / User Authentication without declared controls
@@ -191,21 +191,51 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
                     raw_detected_set.add("sqli")
 
         # E. Plaintext / Unhashed Password Storage
-        if re.search(r"\b(plaintext|plain text|cleartext|unhashed|unencrypted)\s+(?:passwords?|credentials?|secrets?)\b|\b(?:store|save|keep)\s+(?:passwords?|credentials?)\s+in\s+(?:plaintext|plain text|cleartext)\b", prompt, re.IGNORECASE):
+        if re.search(
+            r"\b(?:plaintext|plain text|cleartext|unhashed|unencrypted)\s+(?:passwords?|credentials?|secrets?)\b|"
+            r"\b(?:passwords?|credentials?|secrets?)\s+(?:stored\s+|saved\s+|kept\s+)?in\s+(?:plaintext|plain text|cleartext|unhashed|unencrypted)\b|"
+            r"\b(?:store\w*|sav\w*|keep\w*)\s+(?:passwords?|credentials?|secrets?)\s+in\s+(?:plaintext|plain text|cleartext|unhashed|unencrypted)\b",
+            prompt, re.IGNORECASE
+        ):
             raw_detected_set.add("auth_weakness")
             raw_detected_set.add("sensitive_data")
 
         # F. Server-Side Request Forgery on User-Supplied URLs
-        if re.search(r"\b(?:accepts?|takes?|user[- ]supplied|arbitrary)\b.*?\b(?:target\s+)?url\b.*?\b(?:fetch\w*|curl|proxy|request|download)\b|\b(?:fetch\w*|curl|proxy|request)\b.*?\b(?:arbitrary|user[- ]supplied)\b.*?\burl\b", prompt, re.IGNORECASE):
+        if re.search(
+            r"\b(?:accepts?|takes?|user[- ]supplied|arbitrary|user[- ]provided|any)\b.*?\b(?:target\s+)?urls?\b.*?\b(?:fetch\w*|curl|proxy|request\w*|download\w*)\b|"
+            r"\b(?:fetch\w*|curl|proxy|request\w*|download\w*)\s+.*?\b(?:arbitrary|user[- ]supplied|user[- ]provided|any)\b.*?\b(?:target\s+)?urls?\b|"
+            r"\b(?:http\s+(?:post|get)\s+requests?\s+to\s+arbitrary\s+urls?)\b|"
+            r"\b(?:without\s+(?:url\s+|domain\s+|destination\s+)?(?:validation|allowlist\w*|whitelist\w*|restriction\w*))\b",
+            prompt, re.IGNORECASE
+        ):
             raw_detected_set.add("ssrf")
 
         # G. Path Traversal on User-Supplied Filenames / Paths
-        if re.search(r"\b(?:filename|filepath|path)\b.*?\bwithout\s+(?:path\s+|input\s+)?(?:validation|sanitiz\w+|check)\b|\b(?:directory traversal|\.\.\/|\.\.\\)\b", prompt, re.IGNORECASE):
+        if re.search(
+            r"\b(?:filename|filepath|path)\b.*?\bwithout\s+(?:path\s+|input\s+)?(?:validation|sanitiz\w+|check)\b|"
+            r"\b(?:filename|filepath|path)\b.*?\b(?:unvalidated|unsanitized)\b|"
+            r"\b(?:unvalidated|unsanitized)\s+.*?\b(?:filename|filepath|path)\b|"
+            r"\b(?:directory traversal|\.\.\/|\.\.\\)\b",
+            prompt, re.IGNORECASE
+        ):
             raw_detected_set.add("path_traversal")
 
         # H. Command Execution / Subprocess with Shell
         if re.search(r"\b(?:subprocess|popen|system|exec|spawn)\b.*?\bshell\s*=\s*true\b|\b(?:run|execute)\s+user[- ](?:supplied|provided)\s+.*?\b(?:shell|bash|command)\b", prompt, re.IGNORECASE):
             raw_detected_set.add("command_injection")
+
+        # I. Unsafe Token / Credential Exposure (Logging, Public Response, Hardcoding, Improper Disclosure)
+        UNSAFE_TOKEN_EXPOSURE_REGEX = re.compile(
+            r"\b(?:log|logging|print|echo)\s+.*?\b(?:tokens?|passwords?|credentials?|secrets?|api[_-]?keys?)\b.*?\b(?:logs?|console|stdout|stderr|file|debug)\b|"
+            r"\b(?:return|expose|include|send|leak)\s+.*?\b(?:tokens?|passwords?|credentials?|secrets?|api[_-]?keys?)\b.*?\b(?:public|response|json response|api response|body|url|get request)\b|"
+            r"\b(?:hardcode|hardcoded|default)\s+.*?\b(?:tokens?|passwords?|credentials?|secrets?|api[_-]?keys?)\b|"
+            r"\b(?:view|display|show|copy|expose|disclose)\s+.*?\b(?:private|user(?:\x27s)?)\s+.*?\b(?:tokens?|passwords?|credentials?|secrets?)\b.*?\b(?:admin|other|dashboard|panel|console)\b",
+            re.IGNORECASE
+        )
+        if UNSAFE_TOKEN_EXPOSURE_REGEX.search(prompt):
+            raw_detected_set.add("sensitive_data")
+            if re.search(r"\b(?:view|display|show|copy|disclose)\s+.*?\b(?:private|user(?:\x27s)?)\s+.*?\b(?:tokens?|passwords?|credentials?|secrets?)\b", prompt, re.IGNORECASE):
+                raw_detected_set.add("authz_weakness")
 
         # 4. Context-Aware Scoping for Pure Frontend Styling & Cosmetic Component Changes
         task_res = task_classifier.classify_task(prompt)
@@ -275,6 +305,16 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
             if not has_xss_cues:
                 raw_detected_set.discard("xss")
 
+        # Spurious command_injection suppression when prompt contains no OS command, terminal, or shell execution cues
+        if "command_injection" in raw_detected_set:
+            has_cmd_cues = bool(re.search(
+                r"\b(shell\s*=\s*true|bash|terminal|command\s+line|cli|exec(?:ve|v)?|system\s+command|subprocess|popen|spawn|os\.system|shell\s+command|execute\s+(?:a\s+)?shell|run\s+(?:a\s+)?shell)\b",
+                prompt,
+                re.IGNORECASE
+            ))
+            if not has_cmd_cues:
+                raw_detected_set.discard("command_injection")
+
         # Scoping for pure data analysis tasks (e.g. pandas/dataframes/CSV processing)
         if primary_domain == "data_analysis":
             if not re.search(r"\b(sql|database|db|postgres|mysql|sqlite|query|table)\b", prompt, re.IGNORECASE):
@@ -283,6 +323,17 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
                 raw_detected_set.difference_update({"xss", "csrf", "ssrf", "idor"})
             if not re.search(r"\b(train|model|weights|poison|adversarial)\b", prompt, re.IGNORECASE):
                 raw_detected_set.discard("data_poisoning")
+
+        # Prune spurious sensitive_data prediction on secure token handling lacking any unsafe exposure
+        SECURE_TOKEN_HANDLING_REGEX = re.compile(
+            r"\b(cryptographically secure tokens?|time[- ]limited(?:\s+cryptographically secure)?\s+tokens?|short[- ]lived tokens?|token expiration|hashed (?:reset )?tokens?|tokens? hashed using|secure (?:reset )?tokens?|stored securely)\b",
+            re.IGNORECASE
+        )
+        if "sensitive_data" in raw_detected_set:
+            is_secure_token = bool(SECURE_TOKEN_HANDLING_REGEX.search(prompt))
+            has_unsafe_exposure = bool(UNSAFE_TOKEN_EXPOSURE_REGEX.search(prompt))
+            if is_secure_token and not has_unsafe_exposure and not bool(re.search(r"\b(api[_-]?key|sk-[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16}|bearer\s+[a-zA-Z0-9_.]{20,}|AIza[0-9A-Za-z-_]{30,})\b", prompt, re.IGNORECASE)):
+                raw_detected_set.discard("sensitive_data")
 
         # Active risks exclude any explicitly negated features
         raw_detected = sorted(list(raw_detected_set))
@@ -306,30 +357,85 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
                     "evidence_tier": "confirmed_vulnerability",
                     "description": "Explicit instruction to render unescaped or dangerous DOM content."
                 }
-            elif risk == "sqli" and re.search(r"\b(?:unparameteriz\w+|without parameteriz\w+|raw sql|concatenat\w+)\b", prompt, re.IGNORECASE):
-                risk_evidence[risk] = {
-                    "evidence_tier": "confirmed_vulnerability",
-                    "description": "Explicit instruction for unparameterized or dynamic query concatenation."
-                }
+            elif risk == "sqli":
+                has_untrusted_input = bool(re.search(
+                    r"\b(?:user[- ](?:supplied|controlled|provided|input)|user\s+(?:comment|review|input|name|id)|http\s+request|request\s+(?:body|param(?:eter)?s?)|request_param|query[- ]string|query\s+param(?:eter)?s?)\b|"
+                    r"\b(?:endpoint|route|api)\b.*?\b(?:f[\x27\"].*?\{|string format)\b|"
+                    r"\b(?:unparameteriz\w+|without parameteriz\w+|raw sql|concatenat\w+)\b.*?\b(?:user|input|request|parameter)\b",
+                    prompt, re.IGNORECASE
+                ))
+                has_dynamic_format = bool(re.search(
+                    r"\b(?:unparameteriz\w+|without parameteriz\w+|raw sql|concatenat\w+|string format\w*|f['\"])\b",
+                    prompt, re.IGNORECASE
+                ))
+                if has_untrusted_input and has_dynamic_format:
+                    risk_evidence[risk] = {
+                        "evidence_tier": "confirmed_vulnerability",
+                        "description": "Explicit instruction for unparameterized or formatted SQL query directly incorporating untrusted user input."
+                    }
+                elif has_dynamic_format:
+                    risk_evidence[risk] = {
+                        "evidence_tier": "potential_attack_surface",
+                        "description": "Dynamic SQL query formatting detected without confirmed untrusted input source; potential attack surface subject to input provenance."
+                    }
+                else:
+                    risk_evidence[risk] = {
+                        "evidence_tier": "potential_attack_surface",
+                        "description": "Architectural SQL attack surface inferred from specification. Prompt provides insufficient information to confirm a vulnerability."
+                    }
             elif risk in ("auth_weakness", "authz_weakness") and bool(weakened_controls):
                 risk_evidence[risk] = {
                     "evidence_tier": "confirmed_vulnerability",
                     "description": "Explicit instruction to remove or weaken administrative authentication controls."
                 }
-            elif risk in ("auth_weakness", "sensitive_data") and re.search(r"\b(plaintext|plain text|cleartext|unhashed)\s+(?:passwords?|credentials?)\b", prompt, re.IGNORECASE):
+            elif risk in ("auth_weakness", "sensitive_data") and (
+                re.search(
+                    r"\b(?:plaintext|plain text|cleartext|unhashed|unencrypted)\s+(?:passwords?|credentials?|secrets?)\b|"
+                    r"\b(?:passwords?|credentials?|secrets?)\s+(?:stored\s+|saved\s+|kept\s+)?in\s+(?:plaintext|plain text|cleartext|unhashed|unencrypted)\b|"
+                    r"\b(?:store\w*|sav\w*|keep\w*)\s+(?:passwords?|credentials?|secrets?)\s+in\s+(?:plaintext|plain text|cleartext|unhashed|unencrypted)\b",
+                    prompt, re.IGNORECASE
+                )
+            ):
                 risk_evidence[risk] = {
                     "evidence_tier": "confirmed_vulnerability",
-                    "description": "Explicit instruction to store unhashed passwords in plaintext."
+                    "description": "Explicit instruction to store passwords in plaintext without hashing (CWE-256 / CWE-312)."
                 }
             elif risk == "command_injection" and re.search(r"\b(shell\s*=\s*true|user[- ]supplied.*(?:shell|command)|execute.*command.*server)\b", prompt, re.IGNORECASE):
                 risk_evidence[risk] = {
                     "evidence_tier": "confirmed_vulnerability",
                     "description": "Server-side command execution using user-controlled parameters."
                 }
-            elif risk == "auth_weakness" and re.search(r"\b(login(?:\s*(?:page|form|screen|view|component|endpoint))?|user authentication)\b", prompt, re.IGNORECASE) and not declared_controls:
+            elif risk == "ssrf" and re.search(
+                r"\b(?:accepts?|takes?|user[- ]supplied|arbitrary|user[- ]provided|any)\b.*?\b(?:target\s+)?urls?\b.*?\b(?:fetch\w*|curl|proxy|request\w*|download\w*)\b|"
+                r"\b(?:fetch\w*|curl|proxy|request\w*|download\w*)\s+.*?\b(?:arbitrary|user[- ]supplied|user[- ]provided|any)\b.*?\b(?:target\s+)?urls?\b|"
+                r"\b(?:http\s+(?:post|get)\s+requests?\s+to\s+arbitrary\s+urls?)\b|"
+                r"\b(?:without\s+(?:url\s+|domain\s+|destination\s+)?(?:validation|allowlist\w*|whitelist\w*|restriction\w*))\b",
+                prompt, re.IGNORECASE
+            ):
                 risk_evidence[risk] = {
-                    "evidence_tier": "missing_security_control",
-                    "description": "Authentication interface requested without declared password hashing, MFA, or session controls."
+                    "evidence_tier": "confirmed_vulnerability",
+                    "description": "Explicit instruction to fetch arbitrary or user-supplied URLs without validation (SSRF)."
+                }
+            elif risk == "path_traversal" and re.search(
+                r"\b(?:filename|filepath|path)\b.*?\bwithout\s+(?:path\s+|input\s+)?(?:validation|sanitiz\w+|check)\b|"
+                r"\b(?:filename|filepath|path)\b.*?\b(?:unvalidated|unsanitized)\b|"
+                r"\b(?:unvalidated|unsanitized)\s+.*?\b(?:filename|filepath|path)\b|"
+                r"\b(?:directory traversal|\.\.\/|\.\.\\)\b",
+                prompt, re.IGNORECASE
+            ):
+                risk_evidence[risk] = {
+                    "evidence_tier": "confirmed_vulnerability",
+                    "description": "Explicit instruction to access local filesystem paths using user input without path validation (Path Traversal)."
+                }
+            elif risk == "sensitive_data" and UNSAFE_TOKEN_EXPOSURE_REGEX.search(prompt):
+                risk_evidence[risk] = {
+                    "evidence_tier": "confirmed_vulnerability",
+                    "description": "Explicit instruction to expose, log, hardcode, or disclose sensitive credentials/tokens."
+                }
+            elif risk == "auth_weakness" and re.search(r"\b(login(?:\s*(?:page|form|screen|view|component|endpoint|api))?|user authentication)\b", prompt, re.IGNORECASE) and not declared_controls:
+                risk_evidence[risk] = {
+                    "evidence_tier": "potential_attack_surface",
+                    "description": "Authentication endpoint requested without declared security controls. Insufficient information to confirm a vulnerability; MFA and specific hashing algorithms are not universally mandatory."
                 }
             else:
                 risk_evidence[risk] = {
@@ -337,11 +443,31 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
                     "description": "Architectural attack surface inferred from functional specification. Prompt provides insufficient information to confirm a vulnerability."
                 }
 
+        # Deterministic evidence partitions (Priority 4)
+        detected_risk_candidates = list(active_risks)
+        confirmed_vulnerabilities = sorted([r for r, ev in risk_evidence.items() if ev.get("evidence_tier") == "confirmed_vulnerability"])
+        potential_attack_surfaces = sorted([r for r, ev in risk_evidence.items() if ev.get("evidence_tier") == "potential_attack_surface"])
+        missing_security_controls = sorted([r for r, ev in risk_evidence.items() if ev.get("evidence_tier") == "missing_security_control"])
+        mitigated_risks = sorted(list(mitigated_surfaces.keys()))
+        unmitigated_risks = [r for r in active_risks if r not in mitigated_surfaces]
+        insufficient_information = sorted([
+            r for r, ev in risk_evidence.items()
+            if ev.get("evidence_tier") in ("insufficient_information", "potential_attack_surface")
+            or "insufficient information" in ev.get("description", "").lower()
+        ])
+
         return {
             "status": "success",
             "detected_risks": active_risks,
             "risk_count": len(active_risks),
             "raw_predictions": raw_detected,
+            "detected_risk_candidates": detected_risk_candidates,
+            "confirmed_vulnerabilities": confirmed_vulnerabilities,
+            "potential_attack_surfaces": potential_attack_surfaces,
+            "missing_security_controls": missing_security_controls,
+            "mitigated_risks": mitigated_risks,
+            "unmitigated_risks": unmitigated_risks,
+            "insufficient_information": insufficient_information,
             "declared_controls": declared_controls,
             "declared_negations": declared_negations,
             "suppressed_risks": suppressed_active,
@@ -357,11 +483,19 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
             "status": "model_unavailable",
             "detected_risks": None,
             "risk_count": None,
+            "detected_risk_candidates": [],
+            "confirmed_vulnerabilities": [],
+            "potential_attack_surfaces": [],
+            "missing_security_controls": [],
+            "mitigated_risks": [],
+            "unmitigated_risks": [],
+            "insufficient_information": [],
             "declared_controls": declared_controls,
             "declared_negations": declared_negations,
             "suppressed_risks": [],
             "mitigated_surfaces": {},
             "unmitigated_surfaces": [],
+            "risk_evidence": {},
             "context_scoping_applied": False,
             "task_domain": "unknown",
             "error": str(e),
@@ -372,11 +506,19 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
             "status": "error",
             "detected_risks": None,
             "risk_count": None,
+            "detected_risk_candidates": [],
+            "confirmed_vulnerabilities": [],
+            "potential_attack_surfaces": [],
+            "missing_security_controls": [],
+            "mitigated_risks": [],
+            "unmitigated_risks": [],
+            "insufficient_information": [],
             "declared_controls": declared_controls,
             "declared_negations": declared_negations,
             "suppressed_risks": [],
             "mitigated_surfaces": {},
             "unmitigated_surfaces": [],
+            "risk_evidence": {},
             "context_scoping_applied": False,
             "task_domain": "unknown",
             "error": f"Application risk inference error: {str(e)}",
