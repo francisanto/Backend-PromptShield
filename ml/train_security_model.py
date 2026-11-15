@@ -303,7 +303,9 @@ def train_application_risk_model(
 
 if __name__ == "__main__":
     base_dir = Path(__file__).resolve().parent.parent
-    data_file = base_dir / "data" / "security_risk_dataset.csv"
+    data_file = base_dir / "data" / "clean" / "high_quality_security_dataset.csv"
+    if not data_file.exists():
+        data_file = base_dir / "data" / "raw" / "security_risk_dataset.csv"
     model_file = base_dir / "models" / "security_risk_model.pkl"
     metrics_file = base_dir / "ml" / "results" / "application_risk_metrics.json"
 
