@@ -37,7 +37,9 @@ from analyzers.prompt_analyzer import analyze_prompt
 
 def evaluate_task_classifier(repo_root: Path) -> Dict[str, Any]:
     """Evaluates the Task Classifier on sample benchmark inputs."""
-    model_path = repo_root / "artifacts" / "task_classifier" / "model.pkl"
+    model_path = repo_root / "models" / "task_classification" / "model.pkl"
+    if not model_path.exists():
+        model_path = repo_root / "artifacts" / "task_classifier" / "model.pkl"
     if not model_path.exists():
         model_path = repo_root / "models" / "task_classifier_model.pkl"
 

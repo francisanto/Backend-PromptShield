@@ -15,6 +15,9 @@ from analyzers.model_comparison.task_classifier import (
 def get_task_classifier_model_path() -> Path:
     """Returns path to the task classifier model artifact."""
     root = Path(__file__).resolve().parent.parent.parent
+    canonical = root / "models" / "task_classification" / "model.pkl"
+    if canonical.exists():
+        return canonical
     artifact_path = root / "artifacts" / "task_classifier" / "model.pkl"
     if artifact_path.exists():
         return artifact_path

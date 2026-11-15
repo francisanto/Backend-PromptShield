@@ -129,7 +129,11 @@ class LocalTaskClassifier:
     def __init__(self, model_path: Optional[Path] = None):
         if model_path is None:
             repo_root = Path(__file__).resolve().parent.parent.parent
-            self.model_path = repo_root / "models" / "task_classifier_model.pkl"
+            primary = repo_root / "models" / "task_classification" / "model.pkl"
+            if primary.exists():
+                self.model_path = primary
+            else:
+                self.model_path = repo_root / "models" / "task_classifier_model.pkl"
         else:
             self.model_path = model_path
         self._artifact = None

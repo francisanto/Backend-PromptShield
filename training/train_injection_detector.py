@@ -57,7 +57,9 @@ def train_injection_detector(
 
 
 if __name__ == "__main__":
-    data = REPO_ROOT / "data" / "processed" / "mpdd_clean.csv"
+    data = REPO_ROOT / "data" / "clean" / "mpdd_clean.csv"
+    if not data.exists():
+        data = REPO_ROOT / "data" / "processed" / "mpdd_clean.csv"
     artifact_m = REPO_ROOT / "artifacts" / "injection_detector" / "model.pkl"
     legacy_m = REPO_ROOT / "models" / "prompt_security_model.pkl"
     artifact_met = REPO_ROOT / "artifacts" / "injection_detector" / "metrics.json"

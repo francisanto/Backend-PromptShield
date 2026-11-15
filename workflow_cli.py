@@ -36,7 +36,8 @@ from analyzers.prompt_security_analyzer import analyze_prompt_security
 from analyzers.sensitive_data_detector import detect_sensitive_data, PATTERNS, redact_secret
 from analyzers.model_comparison.task_classifier import task_classifier
 from analyzers.model_comparison.engine import comparison_engine, ModelComparisonReport
-from analyzers.model_comparison.registry import ProductCategory
+from analyzers.model_comparison.registry import ProductCategory, registry
+from analyzers.ide_comparison.engine import ide_comparison_engine
 from analyzers.model_comparison.ranker import RankingPreset
 from analyzers.model_comparison.tokenizer_adapters import get_tokenizer_adapter
 from analyzers.prompt_optimizer import prompt_optimizer, OptimizationResult
@@ -167,33 +168,112 @@ VALID_SCOPES = {
 }
 
 
-def select_development_scope(colors: Colors) -> Optional[Tuple[str, str]]:
+def display_scope_check_results(
+    colors: Colors,
+    scope_pred: ScopePredictionResult,
+    task_category: str
+) -> None:
+    """
+    Displays the ML scope and architectural requirements check results immediately
+    after prompt entry.
+    """
+    print(f"\n{colors.BOLD}================================================================================{colors.RESET}")
+    print(f"{colors.BOLD}STEP 2 — MODEL SCOPE CHECK & ARCHITECTURAL CLASSIFICATION{colors.RESET}")
+    print(f"{colors.BOLD}================================================================================{colors.RESET}")
+    if scope_pred.status == "success":
+        pred_disp = scope_pred.primary_scope.replace("_", " ").title()
+        conf_pct = f"{scope_pred.primary_scope_confidence * 100:.1f}%"
+        print(f"Model Scope Detection Results:")
+        print(f"  • {colors.BOLD}Primary Scope:{colors.RESET}          {colors.CYAN}{pred_disp}{colors.RESET} ({conf_pct} confidence)")
+
+        reqs = scope_pred.requirements
+        print(f"  • {colors.BOLD}Architectural Flags:{colors.RESET}")
+        for r_key, r_label in [
+            ("frontend_required", "Frontend Required"),
+            ("backend_required", "Backend Required"),
+            ("database_required", "Database Required"),
+            ("api_required", "API Required"),
+            ("authentication_required", "Authentication Required"),
+            ("external_integration_required", "External Integration"),
+        ]:
+            if r_key in reqs:
+                req = reqs[r_key]
+                flag_str = f"{colors.GREEN}Yes{colors.RESET}" if req.predicted_flag == 1 else f"{colors.DIM}No{colors.RESET}"
+                prob_str = f"({req.probability * 100:.1f}%)"
+                print(f"      - {r_label:<28} {flag_str} {prob_str}")
+
+        comp_disp = scope_pred.complexity.capitalize()
+        comp_conf = f"{scope_pred.complexity_confidence * 100:.1f}%"
+        design_disp = scope_pred.design_emphasis.capitalize()
+        design_conf = f"{scope_pred.design_emphasis_confidence * 100:.1f}%"
+        intent_disp = scope_pred.task_intent.capitalize()
+        intent_conf = f"{scope_pred.task_intent_confidence * 100:.1f}%"
+
+        print(f"  • {colors.BOLD}Complexity:{colors.RESET}             {comp_disp} ({comp_conf})")
+        print(f"  • {colors.BOLD}Design Emphasis:{colors.RESET}        {design_disp} ({design_conf})")
+        print(f"  • {colors.BOLD}Task Intent:{colors.RESET}            {intent_disp} ({intent_conf})")
+    else:
+        print(f"  {colors.YELLOW}Scope Predictor model unavailable ({scope_pred.error or 'offline'}).{colors.RESET}")
+
+    cat_str = getattr(task_category, "predicted_category", str(task_category))
+    cat_disp = cat_str.replace("_", " ").title()
+    print(f"  • {colors.BOLD}Inferred Domain:{colors.RESET}        {cat_disp}")
+    print("-" * 80)
+
+
+def select_development_scope(
+    colors: Colors,
+    detected_scope: Optional[str] = None
+) -> Optional[Tuple[str, str]]:
     """
     Prompts the user to select one of exactly three development scopes:
     1. Frontend
     2. Backend
     3. Full Stack
 
+    If detected_scope is provided, pressing Enter defaults to the detected scope.
     Returns a tuple of (scope_id, display_name), or None if canceled.
     """
-    print(f"\n{colors.BOLD}================================================================================{colors.RESET}")
-    print(f"{colors.BOLD}STEP 2 — SELECT DEVELOPMENT SCOPE{colors.RESET}")
-    print(f"{colors.BOLD}================================================================================{colors.RESET}")
-    print("Select the intended development scope for this prompt:")
+    print("Confirm or select the intended development scope for this prompt:")
     print(f"  {colors.BOLD}1.{colors.RESET} Frontend")
     print(f"  {colors.BOLD}2.{colors.RESET} Backend")
     print(f"  {colors.BOLD}3.{colors.RESET} Full Stack")
     print("-" * 80)
 
+    # Determine default choice from detected scope
+    default_id = "full_stack"
+    default_disp = "Full Stack"
+    if detected_scope:
+        norm = detected_scope.lower()
+        if norm in {"frontend", "design_only"}:
+            default_id = "frontend"
+            default_disp = "Frontend"
+        elif norm in {"backend", "security_only"}:
+            default_id = "backend"
+            default_disp = "Backend"
+        elif norm in {"full_stack", "unclear"}:
+            default_id = "full_stack"
+            default_disp = "Full Stack"
+
+    prompt_label = (
+        f"{colors.CYAN}Enter choice [1-3, or press Enter to confirm '{default_disp}']:{colors.RESET} "
+        if detected_scope else
+        f"{colors.CYAN}Enter choice [1-3]:{colors.RESET} "
+    )
+
     while True:
         try:
-            choice = input(f"{colors.CYAN}Enter choice [1-3]:{colors.RESET} ").strip().lower()
+            choice = input(prompt_label).strip().lower()
         except (KeyboardInterrupt, EOFError):
             print()
             return None
 
         if choice in {"exit", "quit", "q", "cancel"}:
             return None
+
+        if not choice and detected_scope:
+            print(f"{colors.GREEN}✓ Confirmed Scope: {colors.BOLD}{default_disp}{colors.RESET}")
+            return default_id, default_disp
 
         if choice in VALID_SCOPES:
             scope_id, display_name = VALID_SCOPES[choice]
@@ -324,7 +404,8 @@ def estimate_tokens_comparison(orig_text: str, opt_text: str) -> Dict[str, Any]:
 def run_complete_promptshield_analysis(
     prompt: str,
     selected_scope_id: str,
-    selected_scope_display: str
+    selected_scope_display: str,
+    precomputed_scope_pred: Optional[ScopePredictionResult] = None
 ) -> Dict[str, Any]:
     """
     Executes the complete PromptShield AI analysis pipeline:
@@ -338,7 +419,10 @@ def run_complete_promptshield_analysis(
     H. Multi-Provider Token Estimation
     """
     # 1. Implementation Scope Predictor
-    scope_pred = scope_predictor.predict(prompt)
+    if precomputed_scope_pred is not None:
+        scope_pred = precomputed_scope_pred
+    else:
+        scope_pred = scope_predictor.predict(prompt)
 
     # 2. Scope Alignment Check
     alignment = evaluate_scope_alignment(selected_scope_id, selected_scope_display, scope_pred)
@@ -400,11 +484,72 @@ def run_complete_promptshield_analysis(
 
 
 # ==============================================================================
-# STEP 4: OPTIONAL MODEL COMPARISON
+# STEP 3: OPTIONAL COMPARISON (IDE / FOUNDATION MODELS / BOTH / CONTINUE)
 # ==============================================================================
+
+def prompt_comparison_options(colors: Colors) -> str:
+    """
+    Displays optional comparison modes:
+    1. Continue (Standard Security Scanning & Prompt Optimization)
+    2. IDE Comparison (Compare AI Coding Environments: Antigravity, Cursor, etc.)
+    3. Model Comparison (Compare Foundation LLMs: Claude, GPT, Gemini, etc.)
+    4. Both (IDE & Model Comparison)
+    """
+    print(f"\n{colors.BOLD}================================================================================{colors.RESET}")
+    print(f"{colors.BOLD}STEP 3 — OPTIONAL COMPARISON{colors.RESET}")
+    print(f"{colors.BOLD}================================================================================{colors.RESET}")
+    print("Choose an optional comparison mode or continue to security scanning & optimization:")
+    print(f"  {colors.BOLD}1.{colors.RESET} Continue (Standard Security Scanning & Prompt Optimization)")
+    print(f"  {colors.BOLD}2.{colors.RESET} IDE Comparison (Compare AI Coding Environments: Antigravity, Cursor, etc.)")
+    print(f"  {colors.BOLD}3.{colors.RESET} Model Comparison (Compare Foundation LLMs: Claude, GPT, Gemini, etc.)")
+    print(f"  {colors.BOLD}4.{colors.RESET} Both (IDE & Model Comparison)")
+    print("-" * 80)
+
+    while True:
+        try:
+            choice = input(f"{colors.CYAN}Enter choice [1-4, or press Enter to Continue]:{colors.RESET} ").strip().lower()
+        except (KeyboardInterrupt, EOFError):
+            print()
+            return "cancel"
+
+        if choice in {"exit", "quit", "q", "cancel"}:
+            return "cancel"
+
+        if choice in {"", "1", "continue", "c", "skip", "no", "n"}:
+            return "continue"
+        elif choice in {"2", "ide", "ides"}:
+            return "ide"
+        elif choice in {"3", "model", "models"}:
+            return "model"
+        elif choice in {"4", "both", "all", "b"}:
+            return "both"
+
+        print(f"{colors.RED}Invalid choice '{choice}'. Please enter 1, 2, 3, or 4.{colors.RESET}")
+
+
+def list_available_ide_assistants(colors: Colors) -> List[str]:
+    """Lists eligible IDE coding assistants from the registry."""
+    ides = registry.list_ides()
+    print(f"\n{colors.BOLD}Eligible IDE Coding Assistants ({len(ides)}):{colors.RESET}")
+    for idx, ide in enumerate(ides, 1):
+        pricing = getattr(ide, "pricing_tier_summary", getattr(ide, "pricing_summary", ""))
+        pricing_str = f" — {pricing}" if pricing else ""
+        print(f"  {colors.CYAN}{idx}.{colors.RESET} {colors.BOLD}{ide.display_name}{colors.RESET} ({ide.vendor}){pricing_str}")
+    return [ide.display_name for ide in ides]
+
+
+def list_available_foundation_models(colors: Colors) -> List[str]:
+    """Lists eligible Foundation Models from the registry."""
+    models = registry.list_models()
+    print(f"\n{colors.BOLD}Eligible Foundation Models ({len(models)}):{colors.RESET}")
+    for idx, m in enumerate(models, 1):
+        print(f"  {colors.CYAN}{idx:2d}.{colors.RESET} {colors.BOLD}{m.display_name}{colors.RESET} ({m.provider})")
+    return [m.display_name for m in models]
+
 
 def prompt_model_comparison(colors: Colors) -> bool:
     """
+    Backward-compatible helper function for legacy tests.
     Asks the user whether they would like to compare AI models for this prompt.
     Options:
     1. Yes
@@ -453,10 +598,76 @@ def run_model_comparison(prompt: str) -> Optional[ModelComparisonReport]:
 # STEP 5: CONSOLIDATED REPORT FORMATTING
 # ==============================================================================
 
+def _format_ide_comparison_section(
+    lines: List[str],
+    ide_report: ModelComparisonReport,
+    colors: Colors,
+    subdiv: str,
+    prefix: str = "13"
+) -> None:
+    lines.append(f"\n{colors.BOLD}[{prefix}] IDE CODING ASSISTANT COMPARISON & RANKING{colors.RESET}")
+    lines.append(subdiv)
+    ranked = getattr(ide_report, "ranked_products", [])
+    if ranked:
+        lines.append(f"  {colors.BOLD}Ranked IDE Assistant Recommendations:{colors.RESET}\n")
+        lines.append(f"  {'Rank':<6} {'IDE Assistant':<24} {'Vendor':<22} {'Score':<10} {'Pricing Summary'}")
+        lines.append("  " + "-" * 76)
+        for p in ranked:
+            p_score = f"{p.score*100:.1f}%"
+            lines.append(f"  #{p.rank:<5} {p.display_name:<24} {p.vendor:<22} {p_score:<10} {p.pricing_summary}")
+
+        lines.append(f"\n  {colors.BOLD}IDE Assistant Evaluation Rationale:{colors.RESET}")
+        for p in ranked:
+            strengths = ", ".join(p.key_strengths[:3]) if hasattr(p, "key_strengths") and p.key_strengths else ""
+            lines.append(f"  • {colors.BOLD}#{p.rank} {p.display_name}{colors.RESET} ({p.vendor}):")
+            lines.append(f"    - Overall Score: {p.score*100:.1f}%")
+            if strengths:
+                lines.append(f"    - Key Strengths: {strengths}")
+            lines.append(f"    - Rationale: {p.reasoning}")
+    else:
+        lines.append(f"  {colors.YELLOW}No eligible IDE coding assistants evaluated.{colors.RESET}")
+
+
+def _format_model_comparison_section(
+    lines: List[str],
+    comparison_report: ModelComparisonReport,
+    colors: Colors,
+    subdiv: str,
+    prefix: str = "13"
+) -> None:
+    lines.append(f"\n{colors.BOLD}[{prefix}] OFFLINE FOUNDATION MODEL COMPARISON & RANKING{colors.RESET}")
+    lines.append(subdiv)
+    ranked = getattr(comparison_report, "ranked_models", [])
+    if ranked:
+        lines.append(f"  {colors.BOLD}Ranked Model Recommendations (Balanced TOPSIS / WSM Preset):{colors.RESET}\n")
+        lines.append(f"  {'Rank':<6} {'Model':<24} {'Provider':<14} {'Suitability':<14} {'Est. Cost':<14} {'Token Count':<12}")
+        lines.append("  " + "-" * 76)
+
+        top_models = ranked[:5]
+        for rm in top_models:
+            suit_pct = f"{rm.suitability_score*100:.1f}%"
+            cost_str = f"${rm.estimated_cost_usd:.5f}" if rm.estimated_cost_usd is not None else "N/A"
+            tok_str = f"{rm.token_count}"
+            lines.append(f"  #{rm.rank:<5} {rm.display_name:<24} {rm.provider:<14} {suit_pct:<14} {cost_str:<14} {tok_str:<12}")
+
+        lines.append(f"\n  {colors.BOLD}Top Model Evaluation Rationale:{colors.RESET}")
+        for rm in ranked[:3]:
+            details = comparison_report.model_details.get(rm.model_id) if hasattr(comparison_report, "model_details") else None
+            caps = ", ".join(details.capabilities[:3]) if details and hasattr(details, "capabilities") else ""
+            lines.append(f"  • {colors.BOLD}#{rm.rank} {rm.display_name}{colors.RESET} ({rm.provider}):")
+            lines.append(f"    - Suitability Score: {rm.suitability_score*100:.1f}%")
+            lines.append(f"    - Rationale: {rm.reasoning}")
+            if caps:
+                lines.append(f"    - Key Capabilities: {caps}")
+    else:
+        lines.append(f"  {colors.YELLOW}No eligible foundation models evaluated.{colors.RESET}")
+
+
 def format_consolidated_report(
     analysis_data: Dict[str, Any],
-    comparison_report: Optional[ModelComparisonReport],
-    colors: Colors
+    comparison_report: Optional[ModelComparisonReport] = None,
+    colors: Optional[Colors] = None,
+    ide_comparison_report: Optional[ModelComparisonReport] = None
 ) -> str:
     """
     Constructs the organized, human-readable terminal report containing:
@@ -472,8 +683,10 @@ def format_consolidated_report(
     10. Security recommendations
     11. Original and optimized prompts
     12. Token estimates
-    13. Model comparison (if requested)
+    13. IDE and/or Model comparison (if requested)
     """
+    if colors is None:
+        colors = Colors(enabled=False)
     lines: List[str] = []
     w = 80
     div = "=" * w
@@ -818,34 +1031,19 @@ def format_consolidated_report(
     else:
         lines.append(f"  {colors.YELLOW}Token estimation unavailable.{colors.RESET}")
 
-    # 13. Model Comparison (Optional)
-    if comparison_report:
-        lines.append(f"\n{colors.BOLD}[13] OFFLINE FOUNDATION MODEL COMPARISON & RANKING{colors.RESET}")
+    # 13. Comparison Section (IDE Assistants and/or Foundation Models)
+    has_ide = ide_comparison_report is not None and bool(getattr(ide_comparison_report, "ranked_products", []))
+    has_model = comparison_report is not None and bool(getattr(comparison_report, "ranked_models", []))
+
+    if has_ide and has_model:
+        lines.append(f"\n{colors.BOLD}[13] COMPARISON (IDE ASSISTANTS & FOUNDATION MODELS){colors.RESET}")
         lines.append(subdiv)
-        ranked = comparison_report.ranked_models
-        if ranked:
-            lines.append(f"  {colors.BOLD}Ranked Model Recommendations (Balanced TOPSIS / WSM Preset):{colors.RESET}\n")
-            lines.append(f"  {'Rank':<6} {'Model':<24} {'Provider':<14} {'Suitability':<14} {'Est. Cost':<14} {'Token Count':<12}")
-            lines.append("  " + "-" * 76)
-
-            top_models = ranked[:5]
-            for rm in top_models:
-                suit_pct = f"{rm.suitability_score*100:.1f}%"
-                cost_str = f"${rm.estimated_cost_usd:.5f}" if rm.estimated_cost_usd is not None else "N/A"
-                tok_str = f"{rm.token_count}"
-                lines.append(f"  #{rm.rank:<5} {rm.display_name:<24} {rm.provider:<14} {suit_pct:<14} {cost_str:<14} {tok_str:<12}")
-
-            lines.append(f"\n  {colors.BOLD}Top Model Evaluation Rationale:{colors.RESET}")
-            for rm in ranked[:3]:
-                details = comparison_report.model_details.get(rm.model_id)
-                caps = ", ".join(details.capabilities[:3]) if details else ""
-                lines.append(f"  • {colors.BOLD}#{rm.rank} {rm.display_name}{colors.RESET} ({rm.provider}):")
-                lines.append(f"    - Suitability Score: {rm.suitability_score*100:.1f}%")
-                lines.append(f"    - Rationale: {rm.reasoning}")
-                if caps:
-                    lines.append(f"    - Key Capabilities: {caps}")
-        else:
-            lines.append(f"  {colors.YELLOW}No eligible foundation models evaluated.{colors.RESET}")
+        _format_ide_comparison_section(lines, ide_comparison_report, colors, subdiv, prefix="13A")
+        _format_model_comparison_section(lines, comparison_report, colors, subdiv, prefix="13B")
+    elif has_ide:
+        _format_ide_comparison_section(lines, ide_comparison_report, colors, subdiv, prefix="13")
+    elif has_model:
+        _format_model_comparison_section(lines, comparison_report, colors, subdiv, prefix="13")
     else:
         lines.append(f"\n{colors.BOLD}[13] MODEL COMPARISON{colors.RESET}")
         lines.append(subdiv)
@@ -866,9 +1064,10 @@ def run_workflow_cli(interactive: bool = True) -> int:
     """
     Drives the complete user-facing workflow:
     STEP 1: Enter prompt (multiline)
-    STEP 2: Select development scope (Frontend, Backend, Full Stack)
-    STEP 3: Run complete PromptShield analysis
-    STEP 4: Optional model comparison
+    STEP 2: Model checks scope (Frontend, Backend, Design, Full Stack, API, etc.) & user confirms scope
+    STEP 3: Optional comparison selection (1: Continue, 2: IDE Compare, 3: Model Compare, 4: Both)
+            Lists eligible product/model names if comparison chosen
+    STEP 4: Run complete security scanning, comparison, and deterministic prompt optimization
     STEP 5: Consolidated report display
     """
     colors = Colors(enabled=is_color_supported())
@@ -896,37 +1095,71 @@ def run_workflow_cli(interactive: bool = True) -> int:
             print(f"{colors.RED}Prompt cannot be empty. Please enter a valid prompt.{colors.RESET}")
             continue
 
-        # STEP 2: Select Development Scope
-        scope_choice = select_development_scope(colors=colors)
+        # STEP 2: Model Scope Check & Architectural Requirements
+        print(f"\n{colors.BOLD}{colors.CYAN}Evaluating implementation scope & architectural requirements...{colors.RESET}")
+        scope_pred = scope_predictor.predict(prompt)
+        task_cat = task_classifier.classify_task(prompt)
+        display_scope_check_results(colors=colors, scope_pred=scope_pred, task_category=task_cat)
+
+        # Confirm or Select Development Scope
+        scope_choice = select_development_scope(
+            colors=colors,
+            detected_scope=scope_pred.primary_scope if scope_pred.status == "success" else None
+        )
         if scope_choice is None:
             print(f"{colors.YELLOW}Session cancelled by user.{colors.RESET}")
             return 0
 
         scope_id, scope_display = scope_choice
 
-        # STEP 3: Run Complete PromptShield Analysis
+        # STEP 3: Optional Comparison Selection (Continue / IDE / Model / Both)
+        comp_choice = prompt_comparison_options(colors=colors)
+        if comp_choice == "cancel":
+            print(f"{colors.YELLOW}Session cancelled by user.{colors.RESET}")
+            return 0
+
+        # List names if comparison selected
+        if comp_choice in {"ide", "both"}:
+            list_available_ide_assistants(colors=colors)
+        if comp_choice in {"model", "both"}:
+            list_available_foundation_models(colors=colors)
+
+        # STEP 4: Run Complete PromptShield Analysis & Comparisons
         print(f"\n{colors.BOLD}{colors.CYAN}Running complete PromptShield AI analysis...{colors.RESET}")
         analysis_data = run_complete_promptshield_analysis(
             prompt=prompt,
             selected_scope_id=scope_id,
-            selected_scope_display=scope_display
+            selected_scope_display=scope_display,
+            precomputed_scope_pred=scope_pred
         )
-        print(f"{colors.GREEN}✓ Core analysis completed successfully.{colors.RESET}")
+        print(f"{colors.GREEN}✓ Core security analysis & prompt optimization completed successfully.{colors.RESET}")
 
-        # STEP 4: Optional Model Comparison
-        do_compare = prompt_model_comparison(colors=colors)
-        comparison_report = None
-        if do_compare:
-            print(f"\n{colors.BOLD}{colors.CYAN}Evaluating model suitability and multi-criteria ranking...{colors.RESET}")
-            comparison_report = run_model_comparison(prompt=prompt)
-            if comparison_report:
-                print(f"{colors.GREEN}✓ Model comparison completed successfully.{colors.RESET}")
+        ide_report = None
+        model_report = None
+        if comp_choice in {"ide", "both"}:
+            print(f"\n{colors.BOLD}{colors.CYAN}Evaluating IDE coding assistant suitability and multi-criteria ranking...{colors.RESET}")
+            try:
+                ide_report = ide_comparison_engine.compare(prompt=prompt)
+                if ide_report:
+                    print(f"{colors.GREEN}✓ IDE comparison completed successfully.{colors.RESET}")
+            except Exception as e:
+                print(f"{colors.YELLOW}IDE comparison failed: {str(e)}{colors.RESET}")
+
+        if comp_choice in {"model", "both"}:
+            print(f"\n{colors.BOLD}{colors.CYAN}Evaluating foundation model suitability and multi-criteria ranking...{colors.RESET}")
+            try:
+                model_report = run_model_comparison(prompt=prompt)
+                if model_report:
+                    print(f"{colors.GREEN}✓ Foundation model comparison completed successfully.{colors.RESET}")
+            except Exception as e:
+                print(f"{colors.YELLOW}Model comparison failed: {str(e)}{colors.RESET}")
 
         # STEP 5: Consolidated Report
         report_text = format_consolidated_report(
             analysis_data=analysis_data,
-            comparison_report=comparison_report,
-            colors=colors
+            comparison_report=model_report,
+            colors=colors,
+            ide_comparison_report=ide_report
         )
         print(report_text)
 

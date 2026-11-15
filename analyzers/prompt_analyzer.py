@@ -48,6 +48,9 @@ def get_app_risk_model_path() -> Path:
     """
     Returns the absolute path to the Application Risk Model artifact.
     """
+    primary = Path(__file__).resolve().parent.parent / "models" / "application_security" / "model.pkl"
+    if primary.exists():
+        return primary
     return Path(__file__).resolve().parent.parent / "models" / "security_risk_model.pkl"
 
 

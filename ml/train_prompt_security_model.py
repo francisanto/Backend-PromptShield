@@ -418,7 +418,9 @@ def train_prompt_security_model(
 
 if __name__ == "__main__":
     base_dir = Path(__file__).resolve().parent.parent
-    data_file = base_dir / "data" / "processed" / "mpdd_clean.csv"
+    data_file = base_dir / "data" / "clean" / "mpdd_clean.csv"
+    if not data_file.exists():
+        data_file = base_dir / "data" / "processed" / "mpdd_clean.csv"
     model_file = base_dir / "models" / "prompt_security_model.pkl"
     results_file = base_dir / "ml" / "results" / "prompt_security_metrics.json"
 
