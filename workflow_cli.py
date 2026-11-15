@@ -481,6 +481,8 @@ def format_consolidated_report(
 
     lines.append("\n" + div)
     lines.append(f"{colors.BOLD}{colors.CYAN}              PROMPTSHIELD AI — CONSOLIDATED WORKFLOW REPORT{colors.RESET}")
+    lines.append(f"{colors.DIM}  Note: All classifications, risk inferences, and scope predictions are statistical{colors.RESET}")
+    lines.append(f"{colors.DIM}  model estimates and heuristic indicators, not verified facts or security guarantees.{colors.RESET}")
     lines.append(div)
 
     # 1. Original Prompt
@@ -528,28 +530,33 @@ def format_consolidated_report(
     primary_domain = task_class.get("primary_domain", "unknown")
     task_conf = task_class.get("confidence", 0.0)
     conf_status = task_class.get("confidence_status", "UNKNOWN")
+
+    marginal_flag = f" {colors.YELLOW}[MARGINAL CONFIDENCE - MODEL ESTIMATE]{colors.RESET}" if task_conf < 0.60 else ""
     lines.append(
         f"  • Primary Domain:         {colors.BOLD}{primary_domain.replace('_', ' ').title()}{colors.RESET} "
-        f"(Confidence: {task_conf*100:.1f}% [{conf_status}])"
+        f"(Confidence: {task_conf*100:.1f}% [{conf_status}]){marginal_flag}"
     )
     detected_domains = task_class.get("detected_domains", [])
     if detected_domains:
         lines.append(f"  • Detected Domains:       {', '.join([d.replace('_', ' ') for d in detected_domains])}")
+    lines.append(f"  {colors.DIM}* Note: Task classification is a statistical prediction to guide model selection.{colors.RESET}")
 
     # 5. Architectural Requirements (6 Binary Flags)
     lines.append(f"\n{colors.BOLD}[5] ARCHITECTURAL REQUIREMENTS (IMPLEMENTATION SCOPE){colors.RESET}")
     lines.append(subdiv)
     if scope_pred.status == "success" and scope_pred.requirements:
-        lines.append(f"  {'Requirement Flag':<32} {'Prediction':<16} {'Probability':<14} {'Threshold':<12} {'Margin':<10}")
-        lines.append("  " + "-" * 76)
+        lines.append(f"  {'Requirement Flag':<32} {'Prediction':<16} {'Probability':<14} {'Threshold':<12} {'Margin':<14}")
+        lines.append("  " + "-" * 88)
         for req_key, req in scope_pred.requirements.items():
             flag_text = f"{colors.GREEN}REQUIRED [1]{colors.RESET}" if req.is_required else f"{colors.DIM}NO [0]{colors.RESET}"
             p_text = f"{req.probability*100:.1f}%"
             th_text = f"{req.threshold*100:.1f}%"
             margin_sign = "+" if req.margin >= 0 else ""
-            m_text = f"{margin_sign}{req.margin*100:.1f}%"
+            marginal_note = f" {colors.YELLOW}⚠️ Marginal{colors.RESET}" if abs(req.margin) < 0.10 else ""
+            m_text = f"{margin_sign}{req.margin*100:.1f}%{marginal_note}"
             disp_key = req_key.replace("_", " ").title()
-            lines.append(f"  {disp_key:<32} {flag_text:<25} {p_text:<14} {th_text:<12} {m_text:<10}")
+            lines.append(f"  {disp_key:<32} {flag_text:<25} {p_text:<14} {th_text:<12} {m_text:<14}")
+        lines.append(f"\n  {colors.DIM}* Note: Architectural requirements are statistical predictions calibrated to balance precision and recall.{colors.RESET}")
     else:
         lines.append(f"  {colors.YELLOW}Architectural requirements predictions unavailable.{colors.RESET}")
 
@@ -557,18 +564,23 @@ def format_consolidated_report(
     lines.append(f"\n{colors.BOLD}[6] COMPLEXITY, DESIGN EMPHASIS & TASK INTENT{colors.RESET}")
     lines.append(subdiv)
     if scope_pred.status == "success":
+        c_flag = f" {colors.YELLOW}[Low Confidence Estimate]{colors.RESET}" if scope_pred.complexity_confidence < 0.55 else ""
+        d_flag = f" {colors.YELLOW}[Low Confidence Estimate]{colors.RESET}" if scope_pred.design_emphasis_confidence < 0.55 else ""
+        i_flag = f" {colors.YELLOW}[Low Confidence Estimate]{colors.RESET}" if scope_pred.task_intent_confidence < 0.55 else ""
+
         lines.append(
             f"  • Complexity Tier:        {colors.BOLD}{scope_pred.complexity.upper()}{colors.RESET} "
-            f"(Confidence: {scope_pred.complexity_confidence*100:.1f}%)"
+            f"(Confidence: {scope_pred.complexity_confidence*100:.1f}%){c_flag}"
         )
         lines.append(
             f"  • Design Emphasis:        {colors.BOLD}{scope_pred.design_emphasis.upper()}{colors.RESET} "
-            f"(Confidence: {scope_pred.design_emphasis_confidence*100:.1f}%)"
+            f"(Confidence: {scope_pred.design_emphasis_confidence*100:.1f}%){d_flag}"
         )
         lines.append(
             f"  • Task Intent:            {colors.BOLD}{scope_pred.task_intent.upper()}{colors.RESET} "
-            f"(Confidence: {scope_pred.task_intent_confidence*100:.1f}%)"
+            f"(Confidence: {scope_pred.task_intent_confidence*100:.1f}%){i_flag}"
         )
+        lines.append(f"  {colors.DIM}* Note: Attribute tiers are model estimates based on training distribution patterns.{colors.RESET}")
     else:
         lines.append(f"  {colors.YELLOW}Secondary attributes unavailable.{colors.RESET}")
 
@@ -583,84 +595,129 @@ def format_consolidated_report(
         mal_p = prompt_sec.get("malicious_probability", 0.0)
         ben_p = prompt_sec.get("benign_probability", 0.0)
 
+        near_threshold_flag = f" {colors.YELLOW}⚠️ Marginal Confidence (Near 50.0% Decision Threshold){colors.RESET}" if 0.40 <= mal_p <= 0.60 else ""
+
         if is_mal:
-            badge = f"{colors.RED}{colors.BOLD}⚠️  MALICIOUS / INJECTION ATTACK{colors.RESET}"
+            badge = f"{colors.RED}{colors.BOLD}⚠️  MALICIOUS / INJECTION PATTERN{colors.RESET}"
         else:
             badge = f"{colors.GREEN}{colors.BOLD}✓ BENIGN / NON-ADVERSARIAL{colors.RESET}"
 
-        lines.append(f"  • Classification:         {badge}")
+        lines.append(f"  • Classification:         {badge}{near_threshold_flag}")
         lines.append(f"  • Adversarial Malice:     {mal_p*100:.1f}%")
         lines.append(f"  • Benign Confidence:      {ben_p*100:.1f}%")
         lines.append(f"  • Decision Threshold:     50.0% (calibrated)")
-        lines.append(f"  • Model Provenance:       {colors.DIM}{prompt_sec.get('disclaimer', '')}{colors.RESET}")
+        lines.append(f"  • Training Provenance:    Curated MPDD benchmark dataset (MIT/Research license) with developer augmentations.")
+        lines.append(f"  • Statistical Disclaimer: {colors.DIM}Statistical pattern classification based on training distribution. Model prediction reflects syntactic and lexical pattern similarity, not conclusive proof of malicious user intent or safe execution.{colors.RESET}")
     elif sec_status in {"model_unavailable", "error"}:
         lines.append(f"  • Classification:         {colors.RED}UNAVAILABLE ({prompt_sec.get('error', 'offline')}){colors.RESET}")
     else:
         lines.append(f"  • Classification:         {colors.DIM}Skipped{colors.RESET}")
 
     # 8. Application Vulnerability Analysis
-    lines.append(f"\n{colors.BOLD}[8] APPLICATION VULNERABILITY ANALYSIS (15 CWE CATEGORIES){colors.RESET}")
+    lines.append(f"\n{colors.BOLD}[8] APPLICATION SECURITY RISK & ATTACK SURFACE ANALYSIS{colors.RESET}")
     lines.append(subdiv)
     app_risks = core.get("application_risks") or {}
     app_status = app_risks.get("status")
 
     if app_status == "success":
+        attack_surfaces = app_risks.get("attack_surfaces", [])
+        active_surfaces = [s for s in attack_surfaces if s.get("status") == "active_surface"]
         conf_vulns = app_risks.get("confirmed_vulnerabilities", [])
         pot_surfaces = app_risks.get("potential_attack_surfaces", [])
         miss_ctrls = app_risks.get("missing_security_controls", [])
-        insuf_info = app_risks.get("insufficient_information", [])
-        risk_ev = app_risks.get("risk_evidence", {})
         decl_ctrls = app_risks.get("declared_controls", [])
         decl_negs = app_risks.get("declared_negations", [])
+        not_identified = app_risks.get("not_identified_from_info", [])
+        risk_ev = app_risks.get("risk_evidence", {})
 
-        # Confirmed Vulnerabilities
-        if conf_vulns:
-            lines.append(f"  {colors.RED}{colors.BOLD}✖ CONFIRMED VULNERABILITIES ({len(conf_vulns)}):{colors.RESET}")
-            for v in conf_vulns:
-                ev_desc = risk_ev.get(v, {}).get("description", "Explicit insecure instruction detected.")
-                meta = RISK_METADATA.get(v, {})
-                title = meta.get("title", v.upper())
-                lines.append(f"    • {colors.BOLD}{title}{colors.RESET}: {ev_desc}")
+        # 8.1 Identified Application Attack Surfaces
+        lines.append(f"  {colors.BOLD}8.1 Identified Application Attack Surfaces (Interfaces & Components Described in Prompt):{colors.RESET}")
+        if active_surfaces:
+            for s in active_surfaces:
+                s_name = s.get("name", "Attack Surface")
+                s_cat = s.get("category", "")
+                s_desc = s.get("description", "")
+                s_match = s.get("matched_text", "")
+                lines.append(f"    • {colors.CYAN}[SURFACE]{colors.RESET} {colors.BOLD}{s_name}{colors.RESET} [{s_cat}] (matched: '{s_match}')")
+                lines.append(f"        {colors.DIM}{s_desc}{colors.RESET}")
         else:
-            lines.append(f"  {colors.GREEN}✓ Confirmed Vulnerabilities: None detected{colors.RESET}")
+            lines.append(f"    {colors.DIM}• None explicitly described in prompt text (pure computational/algorithmic requirement).{colors.RESET}")
 
-        # Missing Security Controls
-        if miss_ctrls:
-            lines.append(f"\n  {colors.YELLOW}{colors.BOLD}⚠️  MISSING SECURITY CONTROLS ({len(miss_ctrls)}):{colors.RESET}")
-            for m in miss_ctrls:
-                ev_desc = risk_ev.get(m, {}).get("description", "Requested component lacks declared security protections.")
-                meta = RISK_METADATA.get(m, {})
-                title = meta.get("title", m.upper())
-                lines.append(f"    • {colors.BOLD}{title}{colors.RESET}: {ev_desc}")
-
-        # Potential Attack Surfaces
-        if pot_surfaces:
-            lines.append(f"\n  {colors.CYAN}{colors.BOLD}ℹ POTENTIAL ATTACK SURFACES ({len(pot_surfaces)}):{colors.RESET}")
-            for s in pot_surfaces:
-                ev_desc = risk_ev.get(s, {}).get("description", "Inferred architectural attack surface.")
-                meta = RISK_METADATA.get(s, {})
-                title = meta.get("title", s.upper())
-                lines.append(f"    • {colors.BOLD}{title}{colors.RESET}: {ev_desc}")
-
-        # Insufficient Information
-        if insuf_info:
-            lines.append(f"\n  {colors.DIM}• Insufficient Information ({len(insuf_info)}): {', '.join(insuf_info)}{colors.RESET}")
-
-        # Declared Security Controls
+        # 8.2 Explicitly Declared Security Controls
+        lines.append(f"\n  {colors.BOLD}8.2 Explicitly Declared Security Controls (Present in Prompt Text):{colors.RESET}")
         if decl_ctrls:
-            lines.append(f"\n  {colors.GREEN}{colors.BOLD}✓ DECLARED SECURITY CONTROLS ({len(decl_ctrls)}):{colors.RESET}")
             for c in decl_ctrls:
                 c_name = c.get("name", "Security Control")
                 c_matched = c.get("matched_text", "")
                 c_cat = c.get("category", "")
-                lines.append(f"    • {colors.BOLD}{c_name}{colors.RESET} [{c_cat}] (matched: '{c_matched}')")
+                c_desc = c.get("description", "")
+                lines.append(f"    {colors.GREEN}[✓ CONTROL]{colors.RESET} {colors.BOLD}{c_name}{colors.RESET} [{c_cat}] (matched: '{c_matched}')")
+                lines.append(f"        {colors.DIM}{c_desc}{colors.RESET}")
+        else:
+            lines.append(f"    {colors.DIM}• None identified from available information (prompt does not explicitly specify defensive controls).{colors.RESET}")
+
+        # 8.3 Missing or Insufficient Security Controls
+        lines.append(f"\n  {colors.BOLD}8.3 Missing or Insufficient Security Controls (Not Present in Specification):{colors.RESET}")
+        missing_entries = []
+        for s in active_surfaces:
+            for cid in s.get("missing_controls_in_spec", []):
+                ctrl_meta = {
+                    "password_hashing": "Password Hashing & Salt (Argon2id/bcrypt)",
+                    "mfa": "Multi-Factor Authentication (MFA/TOTP)",
+                    "rate_limiting": "Rate Limiting & Request Throttling",
+                    "secure_sessions": "Secure Session Cookies (HttpOnly, SameSite) & Token Validation",
+                    "parameterized_queries": "Parameterized Queries & Prepared Statements",
+                    "data_encryption": "Data Encryption at Rest & in Transit (TLS/AES)",
+                    "authorization_checks": "Granular Authorization & RBAC Checks",
+                    "anti_csrf": "Anti-CSRF Synchronizer Tokens",
+                    "file_validation": "Strict File Magic-Bytes Validation & Isolated Non-Executable Storage",
+                    "network_egress_control": "Outbound URL / Network Egress Allowlisting"
+                }
+                c_label = ctrl_meta.get(cid, cid.replace("_", " ").title())
+                missing_entries.append((c_label, s.get("name")))
+
+        if missing_entries:
+            for c_label, s_name in missing_entries[:6]:
+                lines.append(f"    {colors.YELLOW}[!]{colors.RESET} {colors.BOLD}{c_label}{colors.RESET} — Not specified for {s_name}")
+        else:
+            lines.append(f"    {colors.DIM}• None identified from available information.{colors.RESET}")
+
+        # 8.4 Confirmed Vulnerabilities
+        lines.append(f"\n  {colors.BOLD}8.4 Confirmed Vulnerabilities (Explicit Insecure Instructions):{colors.RESET}")
+        if conf_vulns:
+            lines.append(f"    {colors.RED}{colors.BOLD}✖ CONFIRMED VULNERABILITIES DETECTED ({len(conf_vulns)}):{colors.RESET}")
+            for v in conf_vulns:
+                ev_desc = risk_ev.get(v, {}).get("description", "Explicit insecure instruction detected.")
+                meta = RISK_METADATA.get(v, {})
+                title = meta.get("title", v.upper())
+                lines.append(f"      • {colors.BOLD}{title}{colors.RESET}: {ev_desc}")
+        else:
+            lines.append(f"    {colors.GREEN}✓ None identified from available information (prompt contains no explicit instructions to bypass controls or store unhashed secrets).{colors.RESET}")
+
+        # 8.5 Potential Risks Inferred from Requirements
+        lines.append(f"\n  {colors.BOLD}8.5 Potential Risks Inferred from Requirements:{colors.RESET}")
+        if pot_surfaces:
+            for s in pot_surfaces:
+                ev_desc = risk_ev.get(s, {}).get("description", "Inferred architectural attack surface.")
+                meta = RISK_METADATA.get(s, {})
+                title = meta.get("title", s.upper())
+                lines.append(f"    {colors.CYAN}[POTENTIAL]{colors.RESET} {colors.BOLD}{title}{colors.RESET}: {ev_desc}")
+            lines.append(f"    {colors.DIM}* Note: Potential risks inferred from requirements indicate architectural attack surfaces, not confirmed code vulnerabilities.{colors.RESET}")
+        else:
+            lines.append(f"    {colors.DIM}• None identified from available information.{colors.RESET}")
+
+        # 8.6 Not Identified from Available Information
+        lines.append(f"\n  {colors.BOLD}8.6 Risk Categories Not Identified from Available Information:{colors.RESET}")
+        if not_identified:
+            readable_unid = [RISK_METADATA.get(r, {}).get("title", r) for r in not_identified]
+            lines.append(f"    {colors.DIM}• {', '.join(readable_unid[:8])}{' ...' if len(readable_unid) > 8 else ''}{colors.RESET}")
+            lines.append(f"    {colors.DIM}* Note: Absence of security requirements or risk signals in prompt text is not proof that the resulting implementation will be secure.{colors.RESET}")
+        else:
+            lines.append(f"    {colors.DIM}• All surveyed categories triggered architectural or specific signals.{colors.RESET}")
 
         # Declared Negations
         if decl_negs:
             lines.append(f"\n  {colors.DIM}• Declared Negations (Features Excluded): {', '.join([n.get('feature', '') for n in decl_negs])}{colors.RESET}")
-
-        if not conf_vulns and not miss_ctrls and not pot_surfaces:
-            lines.append(f"  {colors.GREEN}• No active attack surfaces or vulnerabilities inferred.{colors.RESET}")
 
     elif app_status in {"model_unavailable", "error"}:
         lines.append(f"  {colors.RED}Application Risk Model unavailable ({app_risks.get('error', 'offline')}).{colors.RESET}")
@@ -673,7 +730,7 @@ def format_consolidated_report(
     sens = analysis_data["sensitive_data"]
     if sens.get("detected"):
         findings = sens.get("findings", [])
-        lines.append(f"  {colors.RED}{colors.BOLD}✖ EXPOSED CREDENTIALS DETECTED ({len(findings)} finding(s)):{colors.RESET}")
+        lines.append(f"  {colors.RED}{colors.BOLD}✖ EXPOSED CREDENTIALS DETECTED IN PROMPT TEXT ({len(findings)} finding(s)):{colors.RESET}")
         for f in findings:
             f_type = f.get("type", "credential")
             f_desc = f.get("description", "Secret")
@@ -681,11 +738,13 @@ def format_consolidated_report(
             lines.append(f"    • {colors.BOLD}{f_desc}{colors.RESET} ({f_type}): {colors.YELLOW}{f_red}{colors.RESET}")
         lines.append(f"    {colors.RED}Action Required: Immediately revoke and remove exposed keys from prompt text.{colors.RESET}")
     else:
-        lines.append(f"  {colors.GREEN}✓ No hardcoded secrets, tokens, or credential strings detected.{colors.RESET}")
+        lines.append(f"  {colors.GREEN}✓ No credential patterns detected within the submitted prompt text.{colors.RESET}")
+    lines.append(f"  {colors.DIM}* Scope Disclaimer: Scanning applies exclusively to the submitted prompt text. Local repositories, backend databases, and environment/deployment configurations have NOT been scanned.{colors.RESET}")
 
     # 10. Security Recommendations
     lines.append(f"\n{colors.BOLD}[10] ACTIONABLE SECURITY RECOMMENDATIONS{colors.RESET}")
     lines.append(subdiv)
+    lines.append(f"  {colors.DIM}* Defensive Architectural Guidance & Best Practices (does not indicate existing code defects):{colors.RESET}\n")
     recs = analysis_data["recommendations"]
     if recs:
         for idx, r in enumerate(recs, 1):
@@ -713,13 +772,22 @@ def format_consolidated_report(
     lines.append(subdiv)
     opt: OptimizationResult = analysis_data["optimization"]
     if analysis_data["optimization_status"] == "success":
-        rules = opt.applied_hardening_rules
-        if rules:
-            lines.append(f"  {colors.GREEN}✓ Applied Hardening Rules ({len(rules)}):{colors.RESET}")
-            for r in rules:
-                lines.append(f"    • {r}")
-        else:
-            lines.append(f"  • Hardening Rules: No additional security rules required.")
+        # Separate declared controls from recommended controls
+        decl_in_opt = getattr(opt, "explicitly_declared_controls", [])
+        recom_in_opt = getattr(opt, "recommended_controls_added", [])
+
+        if decl_in_opt:
+            lines.append(f"  {colors.GREEN}✓ Explicitly Declared Controls Preserved from Prompt:{colors.RESET}")
+            for d in decl_in_opt:
+                lines.append(f"    • {d}")
+
+        if recom_in_opt:
+            lines.append(f"\n  {colors.CYAN}ℹ Recommended Controls Introduced During Optimization:{colors.RESET}")
+            for rc in recom_in_opt:
+                lines.append(f"    • {rc}")
+
+        lines.append(f"\n  • {colors.BOLD}Reason for Prompt Expansion:{colors.RESET} {getattr(opt, 'expansion_reason', 'Adds defensive constraints.')}")
+        lines.append(f"  • {colors.BOLD}Token Efficiency Status:{colors.RESET} {getattr(opt, 'token_efficiency_statement', 'Expanded with explicit guardrails; not token-reduced.')}")
 
         lines.append(f"\n  {colors.BOLD}Optimized Prompt Text:{colors.RESET}")
         lines.append("  " + "-" * 76)
@@ -735,7 +803,7 @@ def format_consolidated_report(
     token_est = analysis_data["token_estimation"]
     if token_est.get("status") == "success":
         lines.append(f"  {'Tokenizer / Provider':<36} {'Original':<12} {'Optimized':<12} {'Delta':<14} {'Method':<20}")
-        lines.append("  " + "-" * 76)
+        lines.append("  " + "-" * 88)
         for comp in token_est.get("comparisons", []):
             label = comp["label"]
             orig_c = comp["orig_tokens"]
@@ -745,7 +813,8 @@ def format_consolidated_report(
             method = comp["method"]
             d_str = f"{delta:+d} ({pct:+.1f}%)"
             lines.append(f"  {label:<36} {orig_c:<12} {opt_c:<12} {d_str:<14} {method:<20}")
-        lines.append(f"\n  {colors.DIM}* Note: Raw text tokenization; actual billing depends on system prompts, tools, and provider caching.{colors.RESET}")
+        lines.append(f"\n  {colors.DIM}* Reason for Expansion: Expansion intentionally introduces concrete architectural constraints, validation rules, and error handling to reduce LLM code omissions. It is not token-reduced.{colors.RESET}")
+        lines.append(f"  {colors.DIM}* Raw text tokenization; actual API billing depends on system prompts, tools, and provider caching.{colors.RESET}")
     else:
         lines.append(f"  {colors.YELLOW}Token estimation unavailable.{colors.RESET}")
 
