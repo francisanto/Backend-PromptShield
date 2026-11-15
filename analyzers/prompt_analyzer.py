@@ -12,6 +12,7 @@ import joblib
 from analyzers.prompt_security_analyzer import analyze_prompt_security
 from analyzers.sensitive_data_detector import detect_sensitive_data
 from analyzers.security_controls_extractor import (
+    extract_attack_surfaces,
     extract_declared_negations,
     extract_security_controls,
     extract_weakened_security_controls,
@@ -122,6 +123,7 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
     declared_controls = extract_security_controls(prompt)
     declared_negations = extract_declared_negations(prompt)
     weakened_controls = extract_weakened_security_controls(prompt)
+    attack_surfaces = extract_attack_surfaces(prompt, declared_negations, declared_controls)
 
     # Compile set of risks to suppress based on explicit feature negations
     suppressed_risks_set = set()
@@ -455,6 +457,16 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
             if ev.get("evidence_tier") in ("insufficient_information", "potential_attack_surface")
             or "insufficient information" in ev.get("description", "").lower()
         ])
+        not_identified_from_info = sorted([
+            r for r in APP_RISK_LABELS
+            if r not in confirmed_vulnerabilities and r not in potential_attack_surfaces and r not in missing_security_controls
+        ])
+
+        disclaimer = (
+            "Statistical multi-label prediction and rule-based heuristic extraction based on application description patterns. "
+            "Natural-language requirements analysis cannot guarantee runtime security or absence of flaws; implementation audits are required. "
+            "Potential risks inferred from requirements indicate architectural attack surfaces, not confirmed code vulnerabilities."
+        )
 
         return {
             "status": "success",
@@ -468,6 +480,9 @@ def analyze_application_risks(prompt: str) -> Dict[str, Any]:
             "mitigated_risks": mitigated_risks,
             "unmitigated_risks": unmitigated_risks,
             "insufficient_information": insufficient_information,
+            "potential_risks_inferred": potential_attack_surfaces,
+            "not_identified_from_info": not_identified_from_info,
+            "attack_surfaces": attack_surfaces,
             "declared_controls": declared_controls,
             "declared_negations": declared_negations,
             "suppressed_risks": suppressed_active,
@@ -612,6 +627,7 @@ def analyze_prompt(prompt: str, analysis_mode: str = "both") -> Dict[str, Any]:
         "prompt_security": prompt_sec_result,
         "application_risks": app_risk_result,
         "sensitive_data": sensitive_data_result,
+        "attack_surfaces": app_risk_result.get("attack_surfaces", []) if isinstance(app_risk_result, dict) else [],
         "declared_controls": app_risk_result.get("declared_controls", []) if isinstance(app_risk_result, dict) else [],
         "declared_negations": app_risk_result.get("declared_negations", []) if isinstance(app_risk_result, dict) else []
     })

@@ -5,7 +5,7 @@ and feature negations from software specification prompts.
 """
 
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 CONTROL_PATTERNS: List[Dict[str, Any]] = [
@@ -336,6 +336,151 @@ def extract_declared_negations(prompt: str) -> List[Dict[str, Any]]:
                 })
 
     return negations
+
+
+ATTACK_SURFACE_DEFINITIONS: List[Dict[str, Any]] = [
+    {
+        "id": "authentication_endpoint",
+        "name": "Authentication & Identity Verification Interface",
+        "category": "Authentication",
+        "negation_feature": "login",
+        "regex": re.compile(
+            r"\b(login|signup|sign[- ]in|sign[- ]up|register|registration|authenticate|auth\b|credentials?|passwords?|oauth|sso|session\b|user auth)\b",
+            re.IGNORECASE
+        ),
+        "description": "User credential ingestion, authentication verification, or session lifecycle entry point.",
+        "potential_risks": ["auth_weakness", "authz_weakness", "sensitive_data"],
+        "relevant_controls": ["password_hashing", "mfa", "rate_limiting", "secure_sessions"]
+    },
+    {
+        "id": "database_datastore",
+        "name": "Database & Data Persistence Layer",
+        "category": "Data Storage",
+        "negation_feature": "database",
+        "regex": re.compile(
+            r"\b(database|sql\b|postgres(?:ql)?|mysql|sqlite|mongodb|redis|dynamodb|datastore|table\b|schema\b|orm\b|sqlalchemy|query|queries|crud)\b",
+            re.IGNORECASE
+        ),
+        "description": "Persistent state storage and dynamic query execution boundary.",
+        "potential_risks": ["sqli", "sensitive_data"],
+        "relevant_controls": ["parameterized_queries", "data_encryption"]
+    },
+    {
+        "id": "api_endpoints",
+        "name": "API & Network Service Endpoints",
+        "category": "Network Interface",
+        "negation_feature": "server_side_processing",
+        "regex": re.compile(
+            r"\b(api\b|apis\b|rest\s*api|endpoint|endpoints|route|routes|controller|controllers|fastapi|express|graphql|http\s*(?:get|post|put|delete|patch)|request\s*(?:body|param))\b",
+            re.IGNORECASE
+        ),
+        "description": "Exposed HTTP/gRPC/GraphQL endpoints accepting structured client requests.",
+        "potential_risks": ["csrf", "idor", "authz_weakness"],
+        "relevant_controls": ["authorization_checks", "rate_limiting", "anti_csrf"]
+    },
+    {
+        "id": "token_cookie_session",
+        "name": "Session Tokens & Client State Storage",
+        "category": "Session Management",
+        "negation_feature": "login",
+        "regex": re.compile(
+            r"\b(jwt|token\b|tokens\b|bearer\b|cookie\b|cookies\b|session\s*cookie|auth\s*token)\b",
+            re.IGNORECASE
+        ),
+        "description": "Stateless client tokens or browser cookies managing authorization state.",
+        "potential_risks": ["auth_weakness", "csrf", "sensitive_data"],
+        "relevant_controls": ["secure_sessions", "anti_csrf"]
+    },
+    {
+        "id": "file_upload_binary",
+        "name": "File Upload & Binary Ingestion",
+        "category": "Storage & File Processing",
+        "negation_feature": "file_upload",
+        "regex": re.compile(
+            r"\b(file\s*upload|uploading|uploads?|file\s*attachment|multer|multipart|image\s*upload|document\s*upload|save\s+file)\b",
+            re.IGNORECASE
+        ),
+        "description": "Filesystem or object storage entry point accepting binary payloads from users.",
+        "potential_risks": ["file_upload", "path_traversal"],
+        "relevant_controls": ["file_validation"]
+    },
+    {
+        "id": "external_integrations",
+        "name": "External Network Integrations & Egress",
+        "category": "Integration",
+        "negation_feature": None,
+        "regex": re.compile(
+            r"\b(webhook|webhooks|external\s*api|third[- ]party|stripe|twilio|sendgrid|outbound\s*request|fetch\s+from|curl|proxy|remote\s+url)\b",
+            re.IGNORECASE
+        ),
+        "description": "Outbound network connections, webhooks, or third-party service dependencies.",
+        "potential_risks": ["ssrf"],
+        "relevant_controls": ["network_egress_control"]
+    }
+]
+
+
+def extract_attack_surfaces(
+    prompt: str,
+    declared_negations: Optional[List[Dict[str, Any]]] = None,
+    declared_controls: Optional[List[Dict[str, Any]]] = None
+) -> List[Dict[str, Any]]:
+    """
+    Extracts explicitly described application interfaces and architectural entry points
+    from prompt text (e.g. authentication endpoints, databases, APIs, JWTs, cookies,
+    file uploads, external integrations).
+
+    Differentiates:
+    - Active attack surfaces explicitly described in requirements
+    - Surfaces explicitly negated by specifications
+    - Explicitly declared security controls present for that surface
+    - Recommended security controls absent from specifications
+    """
+    if not prompt or not isinstance(prompt, str):
+        return []
+
+    negated_features = set()
+    if declared_negations:
+        for neg in declared_negations:
+            negated_features.add(neg.get("feature"))
+
+    present_ctrl_ids = set()
+    if declared_controls:
+        for c in declared_controls:
+            present_ctrl_ids.add(c.get("id"))
+
+    attack_surfaces: List[Dict[str, Any]] = []
+
+    for surface in ATTACK_SURFACE_DEFINITIONS:
+        match = surface["regex"].search(prompt)
+        if match:
+            neg_feat = surface.get("negation_feature")
+            is_negated = bool(neg_feat and neg_feat in negated_features)
+
+            # Match declared controls applicable to this surface
+            controls_present = [
+                cid for cid in surface.get("relevant_controls", [])
+                if cid in present_ctrl_ids
+            ]
+            controls_missing = [
+                cid for cid in surface.get("relevant_controls", [])
+                if cid not in present_ctrl_ids
+            ]
+
+            attack_surfaces.append({
+                "id": surface["id"],
+                "name": surface["name"],
+                "category": surface["category"],
+                "matched_text": match.group(0),
+                "description": surface["description"],
+                "potential_risks": surface["potential_risks"],
+                "is_negated": is_negated,
+                "status": "negated_by_specification" if is_negated else "active_surface",
+                "declared_controls_present": controls_present,
+                "missing_controls_in_spec": controls_missing
+            })
+
+    return attack_surfaces
 
 
 # Canonical aliases

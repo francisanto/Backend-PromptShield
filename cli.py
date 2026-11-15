@@ -450,7 +450,14 @@ def format_security_report(
                 lines.append(f"    {colors.DIM}Suppressed model risk predictions: {', '.join(suppressed_risks)}{colors.RESET}")
 
         # 2C. Model Predicted Potential Attack Surfaces
-        lines.append(f"\n  {colors.BOLD}Predicted Potential Attack Surfaces ({len(detected_risks)} active):{colors.RESET}")
+        attack_surfaces = app_risk.get("attack_surfaces") or []
+        if attack_surfaces:
+            lines.append(f"\n  {colors.BOLD}Identified Application Attack Surfaces ({len(attack_surfaces)}):{colors.RESET}")
+            for s in attack_surfaces:
+                lines.append(f"    {colors.CYAN}[i]{colors.RESET} {colors.BOLD}{s['name']}{colors.RESET} (Matched: \"{s['matched_text']}\")")
+                lines.append(f"        {colors.DIM}{s['description']}{colors.RESET}")
+
+        lines.append(f"\n  {colors.BOLD}Potential Risks Inferred from Requirements ({len(detected_risks)} active):{colors.RESET}")
         if detected_risks:
             for risk in detected_risks:
                 meta = RISK_METADATA.get(risk, {"title": risk, "description": "Application attack surface"})
@@ -461,7 +468,10 @@ def format_security_report(
                     lines.append(f"    {colors.YELLOW}[!]{colors.RESET} {colors.BOLD}{risk:<18}{colors.RESET} — {meta['title']} {colors.YELLOW}[No Declared Defenses]{colors.RESET}")
                 lines.append(f"        {colors.DIM}{meta['description']}{colors.RESET}")
         else:
-            lines.append(f"    {colors.GREEN}✓ No active application attack surfaces detected by baseline model.{colors.RESET}")
+            if attack_surfaces:
+                lines.append(f"    {colors.CYAN}• Specific architectural attack surfaces identified above; no explicit vulnerability patterns detected in prompt text.{colors.RESET}")
+            else:
+                lines.append(f"    {colors.GREEN}✓ No application attack surfaces or vulnerability patterns identified from available information.{colors.RESET}")
 
         lines.append("")
         lines.append(f"  {colors.CYAN}[i] IMPORTANT ARCHITECTURAL DISTINCTION:{colors.RESET}")
@@ -509,6 +519,7 @@ def format_security_report(
         lines.append(f"  {colors.GREEN}✓ No API keys, passwords, private keys, or tokens detected.{colors.RESET}")
 
     lines.append(f"  Detector Note:         {sensitive_data.get('disclaimer', '')}")
+    lines.append(f"  {colors.DIM}* Scope Disclaimer: Scanning applies exclusively to the submitted prompt text. Local repositories, backend databases, and environment/deployment configurations have NOT been scanned.{colors.RESET}")
 
     # Section 4: Actionable Security Recommendations
     recommendations = generate_recommendations(analysis_result)
