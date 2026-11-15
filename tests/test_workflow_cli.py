@@ -35,10 +35,14 @@ from workflow_cli import (
     estimate_tokens_comparison,
     run_complete_promptshield_analysis,
     prompt_model_comparison,
+    prompt_comparison_options,
+    list_available_ide_assistants,
+    list_available_foundation_models,
     run_model_comparison,
     format_consolidated_report,
     run_workflow_cli,
 )
+from analyzers.ide_comparison.engine import ide_comparison_engine
 from analyzers.implementation_scope_predictor import (
     scope_predictor,
     ScopePredictionResult,
@@ -597,5 +601,104 @@ def test_regression_scenario_8_no_explicit_tech_or_architecture():
     assert len(data["scope_prediction"].primary_scope_probabilities) == 6
     assert "[11] PROMPT OPTIMIZATION & HARDENING" in report
     assert "[12] TOKEN ESTIMATION (ORIGINAL VS. OPTIMIZED PROMPT)" in report
+
+
+def test_prompt_comparison_options_all_choices():
+    """Verifies all comparison choices: 1: Continue, 2: IDE, 3: Model, 4: Both, and text inputs."""
+    colors = Colors(enabled=False)
+
+    # Choice 1 -> continue
+    with patch("builtins.input", return_value="1"):
+        assert prompt_comparison_options(colors) == "continue"
+
+    # Empty string (Enter) -> continue
+    with patch("builtins.input", return_value=""):
+        assert prompt_comparison_options(colors) == "continue"
+
+    # Choice 2 -> ide
+    with patch("builtins.input", return_value="2"):
+        assert prompt_comparison_options(colors) == "ide"
+
+    with patch("builtins.input", return_value="ide"):
+        assert prompt_comparison_options(colors) == "ide"
+
+    # Choice 3 -> model
+    with patch("builtins.input", return_value="3"):
+        assert prompt_comparison_options(colors) == "model"
+
+    with patch("builtins.input", return_value="models"):
+        assert prompt_comparison_options(colors) == "model"
+
+    # Choice 4 -> both
+    with patch("builtins.input", return_value="4"):
+        assert prompt_comparison_options(colors) == "both"
+
+    with patch("builtins.input", return_value="both"):
+        assert prompt_comparison_options(colors) == "both"
+
+
+def test_list_available_products():
+    """Verifies that product listing helper functions return verified names."""
+    colors = Colors(enabled=False)
+
+    ide_names = list_available_ide_assistants(colors)
+    assert len(ide_names) >= 4
+    assert any("Cursor" in name for name in ide_names)
+    assert any("Antigravity" in name for name in ide_names)
+
+    model_names = list_available_foundation_models(colors)
+    assert len(model_names) >= 15
+    assert any("GPT" in name for name in model_names)
+
+
+def test_full_workflow_end_to_end_with_ide_comparison():
+    """Verifies complete analysis and report generation when IDE comparison is selected."""
+    colors = Colors(enabled=False)
+    prompt = "Create a React frontend component with TypeScript and Tailwind CSS."
+
+    analysis_data = run_complete_promptshield_analysis(
+        prompt=prompt,
+        selected_scope_id="frontend",
+        selected_scope_display="Frontend"
+    )
+    ide_report = ide_comparison_engine.compare(prompt=prompt)
+
+    report = format_consolidated_report(
+        analysis_data=analysis_data,
+        comparison_report=None,
+        colors=colors,
+        ide_comparison_report=ide_report
+    )
+
+    assert "[1] ORIGINAL PROMPT" in report
+    assert "[13] IDE CODING ASSISTANT COMPARISON & RANKING" in report
+    assert "Ranked IDE Assistant Recommendations" in report
+    assert "Cursor" in report or "Google Antigravity" in report
+
+
+def test_full_workflow_end_to_end_with_both_comparisons():
+    """Verifies complete analysis and report generation when Both IDE and Model comparisons are selected."""
+    colors = Colors(enabled=False)
+    prompt = "Build a scalable real-time chat service using WebSockets, Redis, and PostgreSQL."
+
+    analysis_data = run_complete_promptshield_analysis(
+        prompt=prompt,
+        selected_scope_id="full_stack",
+        selected_scope_display="Full Stack"
+    )
+    ide_report = ide_comparison_engine.compare(prompt=prompt)
+    model_report = run_model_comparison(prompt=prompt)
+
+    report = format_consolidated_report(
+        analysis_data=analysis_data,
+        comparison_report=model_report,
+        colors=colors,
+        ide_comparison_report=ide_report
+    )
+
+    assert "[1] ORIGINAL PROMPT" in report
+    assert "[13] COMPARISON (IDE ASSISTANTS & FOUNDATION MODELS)" in report
+    assert "[13A] IDE CODING ASSISTANT COMPARISON & RANKING" in report
+    assert "[13B] OFFLINE FOUNDATION MODEL COMPARISON & RANKING" in report
 
 

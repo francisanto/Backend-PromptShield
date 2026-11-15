@@ -273,7 +273,9 @@ def test_benchmark_not_used_in_training():
     """
     repo_root = Path(__file__).resolve().parent.parent
     metrics_path = repo_root / "ml" / "results" / "prompt_security_metrics.json"
-    model_path = repo_root / "models" / "prompt_security_model.pkl"
+    model_path = repo_root / "models" / "prompt_security" / "model.pkl"
+    if not model_path.exists():
+        model_path = repo_root / "models" / "prompt_security_model.pkl"
 
     with open(metrics_path, "r", encoding="utf-8") as f:
         metrics = json.load(f)
