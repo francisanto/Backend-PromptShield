@@ -2155,9 +2155,18 @@ def main():
         action="store_true",
         help="Disable ANSI color output."
     )
+    parser.add_argument(
+        "--workflow", "-w",
+        action="store_true",
+        help="Launch the unified end-to-end PromptShield AI workflow CLI directly."
+    )
 
     args = parser.parse_args()
     colors = Colors(enabled=(not args.no_color and is_color_supported()))
+
+    if args.workflow:
+        from workflow_cli import run_workflow_cli
+        sys.exit(run_workflow_cli(interactive=True))
 
     # Direct file input (non-interactive mode)
     if args.file:

@@ -16,6 +16,9 @@ def get_model_path() -> Path:
     """
     Returns the absolute path to the saved Prompt Security Model artifact.
     """
+    primary = Path(__file__).resolve().parent.parent / "models" / "prompt_security" / "model.pkl"
+    if primary.exists():
+        return primary
     return Path(__file__).resolve().parent.parent / "models" / "prompt_security_model.pkl"
 
 
