@@ -1,0 +1,922 @@
+{
+  "primary_scope": {
+    "best_config": {
+      "solver": "liblinear",
+      "class_weight": "balanced",
+      "C": 5.0,
+      "val_macro_f1": 0.321,
+      "val_weighted_f1": 0.7343,
+      "val_accuracy": 0.7752
+    },
+    "grid_results": [
+      {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 0.1,
+        "val_macro_f1": 0.1183,
+        "val_weighted_f1": 0.3908,
+        "val_accuracy": 0.5504
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 0.2,
+        "val_macro_f1": 0.1891,
+        "val_weighted_f1": 0.5214,
+        "val_accuracy": 0.6202
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 0.5,
+        "val_macro_f1": 0.2516,
+        "val_weighted_f1": 0.6433,
+        "val_accuracy": 0.7132
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 1.0,
+        "val_macro_f1": 0.2651,
+        "val_weighted_f1": 0.6695,
+        "val_accuracy": 0.7364
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 2.0,
+        "val_macro_f1": 0.3025,
+        "val_weighted_f1": 0.7015,
+        "val_accuracy": 0.7519
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 5.0,
+        "val_macro_f1": 0.314,
+        "val_weighted_f1": 0.7252,
+        "val_accuracy": 0.7752
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 10.0,
+        "val_macro_f1": 0.3118,
+        "val_weighted_f1": 0.7259,
+        "val_accuracy": 0.7752
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 0.1,
+        "val_macro_f1": 0.1825,
+        "val_weighted_f1": 0.509,
+        "val_accuracy": 0.6124
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 0.2,
+        "val_macro_f1": 0.2643,
+        "val_weighted_f1": 0.6314,
+        "val_accuracy": 0.6899
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 0.5,
+        "val_macro_f1": 0.2876,
+        "val_weighted_f1": 0.6799,
+        "val_accuracy": 0.7209
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 1.0,
+        "val_macro_f1": 0.304,
+        "val_weighted_f1": 0.6998,
+        "val_accuracy": 0.7364
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 2.0,
+        "val_macro_f1": 0.3159,
+        "val_weighted_f1": 0.7242,
+        "val_accuracy": 0.7597
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 5.0,
+        "val_macro_f1": 0.321,
+        "val_weighted_f1": 0.7343,
+        "val_accuracy": 0.7752
+      },
+      {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 10.0,
+        "val_macro_f1": 0.3064,
+        "val_weighted_f1": 0.7212,
+        "val_accuracy": 0.7674
+      }
+    ]
+  },
+  "requirements": {
+    "frontend_required": {
+      "best_config": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 5.0,
+        "threshold": 0.36,
+        "val_f1": 0.8317,
+        "val_precision": 0.9333,
+        "val_recall": 0.75,
+        "val_accuracy": 0.8682,
+        "val_brier": 0.133
+      },
+      "grid_sample": [
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.15,
+          "val_f1": 0.6054,
+          "val_precision": 0.4341,
+          "val_recall": 1.0,
+          "val_accuracy": 0.4341,
+          "val_brier": 0.2194
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.16,
+          "val_f1": 0.6054,
+          "val_precision": 0.4341,
+          "val_recall": 1.0,
+          "val_accuracy": 0.4341,
+          "val_brier": 0.2194
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.17,
+          "val_f1": 0.6054,
+          "val_precision": 0.4341,
+          "val_recall": 1.0,
+          "val_accuracy": 0.4341,
+          "val_brier": 0.2194
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.18,
+          "val_f1": 0.6054,
+          "val_precision": 0.4341,
+          "val_recall": 1.0,
+          "val_accuracy": 0.4341,
+          "val_brier": 0.2194
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.19,
+          "val_f1": 0.6054,
+          "val_precision": 0.4341,
+          "val_recall": 1.0,
+          "val_accuracy": 0.4341,
+          "val_brier": 0.2194
+        }
+      ]
+    },
+    "backend_required": {
+      "best_config": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 1.0,
+        "threshold": 0.62,
+        "val_f1": 0.9412,
+        "val_precision": 0.9072,
+        "val_recall": 0.9778,
+        "val_accuracy": 0.9147,
+        "val_brier": 0.108
+      },
+      "grid_sample": [
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.15,
+          "val_f1": 0.8219,
+          "val_precision": 0.6977,
+          "val_recall": 1.0,
+          "val_accuracy": 0.6977,
+          "val_brier": 0.1761
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.16,
+          "val_f1": 0.8219,
+          "val_precision": 0.6977,
+          "val_recall": 1.0,
+          "val_accuracy": 0.6977,
+          "val_brier": 0.1761
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.17,
+          "val_f1": 0.8219,
+          "val_precision": 0.6977,
+          "val_recall": 1.0,
+          "val_accuracy": 0.6977,
+          "val_brier": 0.1761
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.18,
+          "val_f1": 0.8219,
+          "val_precision": 0.6977,
+          "val_recall": 1.0,
+          "val_accuracy": 0.6977,
+          "val_brier": 0.1761
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.19,
+          "val_f1": 0.8219,
+          "val_precision": 0.6977,
+          "val_recall": 1.0,
+          "val_accuracy": 0.6977,
+          "val_brier": 0.1761
+        }
+      ]
+    },
+    "database_required": {
+      "best_config": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 2.0,
+        "threshold": 0.3,
+        "val_f1": 0.8485,
+        "val_precision": 0.8571,
+        "val_recall": 0.84,
+        "val_accuracy": 0.8837,
+        "val_brier": 0.1184
+      },
+      "grid_sample": [
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.15,
+          "val_f1": 0.5587,
+          "val_precision": 0.3876,
+          "val_recall": 1.0,
+          "val_accuracy": 0.3876,
+          "val_brier": 0.1964
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.16,
+          "val_f1": 0.5587,
+          "val_precision": 0.3876,
+          "val_recall": 1.0,
+          "val_accuracy": 0.3876,
+          "val_brier": 0.1964
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.17,
+          "val_f1": 0.5587,
+          "val_precision": 0.3876,
+          "val_recall": 1.0,
+          "val_accuracy": 0.3876,
+          "val_brier": 0.1964
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.18,
+          "val_f1": 0.5587,
+          "val_precision": 0.3876,
+          "val_recall": 1.0,
+          "val_accuracy": 0.3876,
+          "val_brier": 0.1964
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.19,
+          "val_f1": 0.5587,
+          "val_precision": 0.3876,
+          "val_recall": 1.0,
+          "val_accuracy": 0.3876,
+          "val_brier": 0.1964
+        }
+      ]
+    },
+    "api_required": {
+      "best_config": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 2.0,
+        "threshold": 0.34,
+        "val_f1": 0.9123,
+        "val_precision": 0.9286,
+        "val_recall": 0.8966,
+        "val_accuracy": 0.9612,
+        "val_brier": 0.0755
+      },
+      "grid_sample": [
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.15,
+          "val_f1": 0.3671,
+          "val_precision": 0.2248,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2248,
+          "val_brier": 0.1349
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.16,
+          "val_f1": 0.3671,
+          "val_precision": 0.2248,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2248,
+          "val_brier": 0.1349
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.17,
+          "val_f1": 0.3671,
+          "val_precision": 0.2248,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2248,
+          "val_brier": 0.1349
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.18,
+          "val_f1": 0.3671,
+          "val_precision": 0.2248,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2248,
+          "val_brier": 0.1349
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.19,
+          "val_f1": 0.3671,
+          "val_precision": 0.2248,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2248,
+          "val_brier": 0.1349
+        }
+      ]
+    },
+    "authentication_required": {
+      "best_config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 0.5,
+        "threshold": 0.22,
+        "val_f1": 0.5,
+        "val_precision": 0.3438,
+        "val_recall": 0.9167,
+        "val_accuracy": 0.8295,
+        "val_brier": 0.0805
+      },
+      "grid_sample": [
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.15,
+          "val_f1": 0.1727,
+          "val_precision": 0.0945,
+          "val_recall": 1.0,
+          "val_accuracy": 0.1085,
+          "val_brier": 0.0932
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.16,
+          "val_f1": 0.1618,
+          "val_precision": 0.0887,
+          "val_recall": 0.9167,
+          "val_accuracy": 0.1163,
+          "val_brier": 0.0932
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.17,
+          "val_f1": 0.176,
+          "val_precision": 0.0973,
+          "val_recall": 0.9167,
+          "val_accuracy": 0.2016,
+          "val_brier": 0.0932
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.18,
+          "val_f1": 0.2018,
+          "val_precision": 0.1134,
+          "val_recall": 0.9167,
+          "val_accuracy": 0.3256,
+          "val_brier": 0.0932
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.19,
+          "val_f1": 0.2366,
+          "val_precision": 0.1358,
+          "val_recall": 0.9167,
+          "val_accuracy": 0.4496,
+          "val_brier": 0.0932
+        }
+      ]
+    },
+    "external_integration_required": {
+      "best_config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 5.0,
+        "threshold": 0.17,
+        "val_f1": 0.6389,
+        "val_precision": 0.561,
+        "val_recall": 0.7419,
+        "val_accuracy": 0.7984,
+        "val_brier": 0.1443
+      },
+      "grid_sample": [
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.15,
+          "val_f1": 0.3875,
+          "val_precision": 0.2403,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2403,
+          "val_brier": 0.1719
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.16,
+          "val_f1": 0.3875,
+          "val_precision": 0.2403,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2403,
+          "val_brier": 0.1719
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.17,
+          "val_f1": 0.3875,
+          "val_precision": 0.2403,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2403,
+          "val_brier": 0.1719
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.18,
+          "val_f1": 0.3875,
+          "val_precision": 0.2403,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2403,
+          "val_brier": 0.1719
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "threshold": 0.19,
+          "val_f1": 0.3875,
+          "val_precision": 0.2403,
+          "val_recall": 1.0,
+          "val_accuracy": 0.2403,
+          "val_brier": 0.1719
+        }
+      ]
+    }
+  },
+  "secondary": {
+    "complexity": {
+      "best_config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 1.0,
+        "val_macro_f1": 0.6507,
+        "val_weighted_f1": 0.7257,
+        "val_accuracy": 0.7364
+      },
+      "grid_results": [
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "val_macro_f1": 0.2472,
+          "val_weighted_f1": 0.4368,
+          "val_accuracy": 0.5891
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.2,
+          "val_macro_f1": 0.2866,
+          "val_weighted_f1": 0.4704,
+          "val_accuracy": 0.6047
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.5,
+          "val_macro_f1": 0.3932,
+          "val_weighted_f1": 0.5563,
+          "val_accuracy": 0.6357
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 1.0,
+          "val_macro_f1": 0.4646,
+          "val_weighted_f1": 0.6019,
+          "val_accuracy": 0.6512
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 2.0,
+          "val_macro_f1": 0.5784,
+          "val_weighted_f1": 0.6585,
+          "val_accuracy": 0.6822
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 5.0,
+          "val_macro_f1": 0.5951,
+          "val_weighted_f1": 0.673,
+          "val_accuracy": 0.6899
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 10.0,
+          "val_macro_f1": 0.6091,
+          "val_weighted_f1": 0.6794,
+          "val_accuracy": 0.6899
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 0.1,
+          "val_macro_f1": 0.4172,
+          "val_weighted_f1": 0.578,
+          "val_accuracy": 0.6512
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 0.2,
+          "val_macro_f1": 0.5722,
+          "val_weighted_f1": 0.6593,
+          "val_accuracy": 0.6822
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 0.5,
+          "val_macro_f1": 0.6074,
+          "val_weighted_f1": 0.6833,
+          "val_accuracy": 0.6977
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 1.0,
+          "val_macro_f1": 0.6507,
+          "val_weighted_f1": 0.7257,
+          "val_accuracy": 0.7364
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 2.0,
+          "val_macro_f1": 0.6156,
+          "val_weighted_f1": 0.689,
+          "val_accuracy": 0.6977
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 5.0,
+          "val_macro_f1": 0.6126,
+          "val_weighted_f1": 0.6796,
+          "val_accuracy": 0.6822
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 10.0,
+          "val_macro_f1": 0.6214,
+          "val_weighted_f1": 0.6881,
+          "val_accuracy": 0.6899
+        }
+      ]
+    },
+    "design_emphasis": {
+      "best_config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 5.0,
+        "val_macro_f1": 0.5166,
+        "val_weighted_f1": 0.7417,
+        "val_accuracy": 0.7674
+      },
+      "grid_results": [
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "val_macro_f1": 0.2758,
+          "val_weighted_f1": 0.5836,
+          "val_accuracy": 0.7054
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.2,
+          "val_macro_f1": 0.2758,
+          "val_weighted_f1": 0.5836,
+          "val_accuracy": 0.7054
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.5,
+          "val_macro_f1": 0.4337,
+          "val_weighted_f1": 0.6668,
+          "val_accuracy": 0.7442
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 1.0,
+          "val_macro_f1": 0.4456,
+          "val_weighted_f1": 0.6891,
+          "val_accuracy": 0.7519
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 2.0,
+          "val_macro_f1": 0.4682,
+          "val_weighted_f1": 0.7074,
+          "val_accuracy": 0.7597
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 5.0,
+          "val_macro_f1": 0.4904,
+          "val_weighted_f1": 0.7213,
+          "val_accuracy": 0.7674
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 10.0,
+          "val_macro_f1": 0.5084,
+          "val_weighted_f1": 0.735,
+          "val_accuracy": 0.7752
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 0.1,
+          "val_macro_f1": 0.3485,
+          "val_weighted_f1": 0.6167,
+          "val_accuracy": 0.7209
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 0.2,
+          "val_macro_f1": 0.4731,
+          "val_weighted_f1": 0.7027,
+          "val_accuracy": 0.7597
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 0.5,
+          "val_macro_f1": 0.4652,
+          "val_weighted_f1": 0.7111,
+          "val_accuracy": 0.7597
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 1.0,
+          "val_macro_f1": 0.4633,
+          "val_weighted_f1": 0.7151,
+          "val_accuracy": 0.7597
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 2.0,
+          "val_macro_f1": 0.4947,
+          "val_weighted_f1": 0.7303,
+          "val_accuracy": 0.7597
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 5.0,
+          "val_macro_f1": 0.5166,
+          "val_weighted_f1": 0.7417,
+          "val_accuracy": 0.7674
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 10.0,
+          "val_macro_f1": 0.5166,
+          "val_weighted_f1": 0.7417,
+          "val_accuracy": 0.7674
+        }
+      ]
+    },
+    "task_intent": {
+      "best_config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 5.0,
+        "val_macro_f1": 0.7253,
+        "val_weighted_f1": 0.8143,
+        "val_accuracy": 0.814
+      },
+      "grid_results": [
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.1,
+          "val_macro_f1": 0.1354,
+          "val_weighted_f1": 0.3463,
+          "val_accuracy": 0.5116
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.2,
+          "val_macro_f1": 0.2971,
+          "val_weighted_f1": 0.4919,
+          "val_accuracy": 0.5891
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 0.5,
+          "val_macro_f1": 0.5244,
+          "val_weighted_f1": 0.688,
+          "val_accuracy": 0.7287
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 1.0,
+          "val_macro_f1": 0.6038,
+          "val_weighted_f1": 0.7304,
+          "val_accuracy": 0.7597
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 2.0,
+          "val_macro_f1": 0.6766,
+          "val_weighted_f1": 0.7672,
+          "val_accuracy": 0.7829
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 5.0,
+          "val_macro_f1": 0.6871,
+          "val_weighted_f1": 0.769,
+          "val_accuracy": 0.7829
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": null,
+          "C": 10.0,
+          "val_macro_f1": 0.7067,
+          "val_weighted_f1": 0.7847,
+          "val_accuracy": 0.7984
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 0.1,
+          "val_macro_f1": 0.6131,
+          "val_weighted_f1": 0.7096,
+          "val_accuracy": 0.7364
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 0.2,
+          "val_macro_f1": 0.6505,
+          "val_weighted_f1": 0.7417,
+          "val_accuracy": 0.7519
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 0.5,
+          "val_macro_f1": 0.6845,
+          "val_weighted_f1": 0.7764,
+          "val_accuracy": 0.7829
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 1.0,
+          "val_macro_f1": 0.7124,
+          "val_weighted_f1": 0.803,
+          "val_accuracy": 0.8062
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 2.0,
+          "val_macro_f1": 0.7102,
+          "val_weighted_f1": 0.8127,
+          "val_accuracy": 0.814
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 5.0,
+          "val_macro_f1": 0.7253,
+          "val_weighted_f1": 0.8143,
+          "val_accuracy": 0.814
+        },
+        {
+          "solver": "liblinear",
+          "class_weight": "balanced",
+          "C": 10.0,
+          "val_macro_f1": 0.7253,
+          "val_weighted_f1": 0.8143,
+          "val_accuracy": 0.814
+        }
+      ]
+    }
+  }
+}

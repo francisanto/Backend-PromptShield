@@ -86,9 +86,15 @@ class ImplementationScopePredictor:
     ]
 
     def __init__(self, models_dir: Optional[Path] = None):
-        self.models_dir = models_dir or (
-            Path(__file__).resolve().parent.parent / "models" / "implementation_scope" / "v1"
-        )
+        if models_dir is not None:
+            self.models_dir = Path(models_dir)
+        else:
+            base_dir = Path(__file__).resolve().parent.parent / "models" / "implementation_scope"
+            v2_dir = base_dir / "v2"
+            if v2_dir.exists() and (v2_dir / "primary_scope_model.joblib").exists():
+                self.models_dir = v2_dir
+            else:
+                self.models_dir = base_dir / "v1"
         self.is_loaded = False
         self.load_error: Optional[str] = None
         self._feature_pipeline = None
