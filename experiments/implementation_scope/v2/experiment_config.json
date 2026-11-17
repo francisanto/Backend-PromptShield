@@ -1,0 +1,209 @@
+{
+  "model_version": "v2.0-guardvane",
+  "created_at": "2026-11-17T11:36:12.007734+00:00",
+  "environment": {
+    "scikit_learn_version": "1.6.1",
+    "joblib_version": "1.5.3",
+    "python_version": "3.9.6 (default, May 22 2026, 11:13:45) \n[Clang 21.0.0 (clang-2100.1.1.101)]"
+  },
+  "training_data": {
+    "corpus_a_rows": 659,
+    "corpus_b_rows": 1659,
+    "validation_rows": 129,
+    "test_rows": 131,
+    "new_scope_records": 50,
+    "new_auth_records": 1000
+  },
+  "feature_extraction": {
+    "word_tfidf": {
+      "ngram_range": [
+        1,
+        2
+      ],
+      "min_df": 2,
+      "max_features": 5000,
+      "sublinear_tf": true
+    },
+    "char_tfidf": {
+      "ngram_range": [
+        3,
+        5
+      ],
+      "analyzer": "char",
+      "min_df": 2,
+      "max_features": 10000,
+      "sublinear_tf": true
+    },
+    "total_features": 15000
+  },
+  "primary_scope_model": {
+    "algorithm": "LogisticRegression",
+    "classes": [
+      "backend",
+      "design_only",
+      "frontend",
+      "full_stack",
+      "security_only",
+      "unclear"
+    ],
+    "config": {
+      "solver": "liblinear",
+      "class_weight": "balanced",
+      "C": 5.0,
+      "val_macro_f1": 0.321,
+      "val_weighted_f1": 0.7343,
+      "val_accuracy": 0.7752
+    }
+  },
+  "requirement_models": {
+    "frontend_required": {
+      "algorithm": "LogisticRegression",
+      "threshold": 0.36,
+      "config": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 5.0,
+        "threshold": 0.36,
+        "val_f1": 0.8317,
+        "val_precision": 0.9333,
+        "val_recall": 0.75,
+        "val_accuracy": 0.8682,
+        "val_brier": 0.133
+      }
+    },
+    "backend_required": {
+      "algorithm": "LogisticRegression",
+      "threshold": 0.62,
+      "config": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 1.0,
+        "threshold": 0.62,
+        "val_f1": 0.9412,
+        "val_precision": 0.9072,
+        "val_recall": 0.9778,
+        "val_accuracy": 0.9147,
+        "val_brier": 0.108
+      }
+    },
+    "database_required": {
+      "algorithm": "LogisticRegression",
+      "threshold": 0.3,
+      "config": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 2.0,
+        "threshold": 0.3,
+        "val_f1": 0.8485,
+        "val_precision": 0.8571,
+        "val_recall": 0.84,
+        "val_accuracy": 0.8837,
+        "val_brier": 0.1184
+      }
+    },
+    "api_required": {
+      "algorithm": "LogisticRegression",
+      "threshold": 0.34,
+      "config": {
+        "solver": "liblinear",
+        "class_weight": null,
+        "C": 2.0,
+        "threshold": 0.34,
+        "val_f1": 0.9123,
+        "val_precision": 0.9286,
+        "val_recall": 0.8966,
+        "val_accuracy": 0.9612,
+        "val_brier": 0.0755
+      }
+    },
+    "authentication_required": {
+      "algorithm": "LogisticRegression",
+      "threshold": 0.22,
+      "config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 0.5,
+        "threshold": 0.22,
+        "val_f1": 0.5,
+        "val_precision": 0.3438,
+        "val_recall": 0.9167,
+        "val_accuracy": 0.8295,
+        "val_brier": 0.0805
+      }
+    },
+    "external_integration_required": {
+      "algorithm": "LogisticRegression",
+      "threshold": 0.17,
+      "config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 5.0,
+        "threshold": 0.17,
+        "val_f1": 0.6389,
+        "val_precision": 0.561,
+        "val_recall": 0.7419,
+        "val_accuracy": 0.7984,
+        "val_brier": 0.1443
+      }
+    }
+  },
+  "secondary_models": {
+    "complexity": {
+      "algorithm": "LogisticRegression",
+      "classes": [
+        "high",
+        "low",
+        "medium"
+      ],
+      "config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 1.0,
+        "val_macro_f1": 0.6507,
+        "val_weighted_f1": 0.7257,
+        "val_accuracy": 0.7364
+      }
+    },
+    "design_emphasis": {
+      "algorithm": "LogisticRegression",
+      "classes": [
+        "high",
+        "low",
+        "medium"
+      ],
+      "config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 5.0,
+        "val_macro_f1": 0.5166,
+        "val_weighted_f1": 0.7417,
+        "val_accuracy": 0.7674
+      }
+    },
+    "task_intent": {
+      "algorithm": "LogisticRegression",
+      "classes": [
+        "audit",
+        "create",
+        "debug",
+        "explain",
+        "modify",
+        "optimize"
+      ],
+      "config": {
+        "solver": "liblinear",
+        "class_weight": "balanced",
+        "C": 5.0,
+        "val_macro_f1": 0.7253,
+        "val_weighted_f1": 0.8143,
+        "val_accuracy": 0.814
+      }
+    }
+  },
+  "file_hashes": {
+    "feature_pipeline.joblib": "af22b0b8c514503c8814590c4939a7b54c6b8f303710c23111d63ecbc3a2b019",
+    "primary_scope_model.joblib": "f648eb95c5b36535de6a8ccc7ad7becb81ba1a6102a982f5006c905780bf4efd",
+    "requirement_models.joblib": "25a93b4fd664cb3aace249f6b3e806807a457828a81e2fe8c1d540fd8d0afcf0",
+    "secondary_models.joblib": "e6dde2816b154d74fbbcaca1d1ee1a2ecfb371a986f2dcc2b8c9c07b78ea6ea1"
+  }
+}
