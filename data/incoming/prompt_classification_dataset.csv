@@ -1,0 +1,601 @@
+prompt,task_category
+How do I configure WSL2 on Windows to limit maximum RAM usage and enable mirrored networking mode in .wslconfig?,general_instruction
+"How do I configure tmux.conf to enable mouse scrolling, vi copy-mode bindings, and increase scrollback history to 50,000 lines?",general_instruction
+Derive the closed-form formula for the total number of structural binary search trees that can be formed with n distinct keys (Catalan numbers).,reasoning_and_math
+Determine the minimum number of comparisons required in the worst case to find both the minimum and maximum elements of an unsorted array of n = 100 integers.,reasoning_and_math
+"Write a clear, concise incident post-mortem report for a 42-minute API outage caused by a misconfigured Redis eviction policy.",creative_and_writing
+A microservice receives Poisson arrivals at 120 requests per minute; compute the probability that more than 5 requests arrive within a given 1-second interval.,reasoning_and_math
+Analyze this Linux setuid helper binary written in C that invokes system('tar -xzf ' + archive) without sanitizing shell metacharacters.,security_analysis
+Calculate cohort retention matrices in Python and render an annotated heatmap showing percentage of active users from Month 0 to Month 12.,data_analysis
+"Given a 4-way set-associative 32 KB L1 data cache with 64-byte cache lines and 48-bit virtual addresses, break down the bit widths of the tag, set index, and block offset.",reasoning_and_math
+Create a product description for the Chrome Web Store listing of a developer productivity extension that formats and diffs JSON payloads.,creative_and_writing
+"Write a Python sqlite3 connection factory that enables WAL mode, foreign key constraints, and a 5-second busy timeout.",code_generation
+Analyze survey Likert-scale responses in Python using diverging stacked bar charts and ordinal logistic regression.,data_analysis
+How do I configure Yarn Berry or npm workspaces in a monorepo to run build scripts across dependent packages in topological order?,general_instruction
+Determine the expected number of comparisons performed by randomized Quicksort on an array of n distinct elements.,reasoning_and_math
+Analyze price elasticity of demand from historical SKU price changes and weekly unit sales using log-log OLS regression in statsmodels.,data_analysis
+Review our CI/CD secret masking setup to ensure base64-encoded secrets printed in build logs are scrubbed.,security_analysis
+Compute the eigenvalues and determinant of a 3x3 Markov transition matrix and verify that the steady-state probability vector sums to 1.,reasoning_and_math
+Compose a persuasive proposal for adopting conventional commits and automated semantic versioning across 15 microservices.,creative_and_writing
+Show me the sed or awk one-liner to replace a key-value setting in a configuration file in place while creating a .bak backup.,general_instruction
+Draft a podcast episode description and show notes for an interview with a database kernel engineer discussing LSM-trees vs B-trees.,creative_and_writing
+Provide the steps to configure Vector or Fluent Bit to tail container JSON logs and forward them to OpenSearch.,general_instruction
+Explain the CAP theorem trade-off formally: prove why a distributed key-value store cannot simultaneously guarantee linearizability and 100% availability during an arbitrary network partition.,reasoning_and_math
+"Write a compelling GitHub Sponsors profile description explaining our project roadmap, sponsorship tiers, and community impact.",creative_and_writing
+Show why binary search requires random access O(1) indexing to achieve O(log n) runtime and degrades to O(n) on singly linked lists.,reasoning_and_math
+Build a Polars expression pipeline to compute z-scores within each product category and flag observations exceeding 3.5 standard deviations.,data_analysis
+Analyze the worst-case time complexity of Quicksort when using median-of-three pivot selection on specifically crafted adversarial inputs.,reasoning_and_math
+How do I configure Grafana provisioning YAML files to automatically load dashboards and Prometheus datasources on startup?,general_instruction
+Draft a community code of conduct and contributor guidelines (CONTRIBUTING.md) welcoming first-time open-source contributors.,creative_and_writing
+Write a BigQuery ML or SQL query to calculate moving averages and exponential smoothing trends on weekly active merchant counts.,data_analysis
+Write a Rust macro declarative rule that generates From<ErrorVariant> implementations for a custom enum error type.,code_generation
+Draft a Request for Comments (RFC) document outlining a unified feature-flag evaluation service for mobile and web clients.,creative_and_writing
+"Clean geospatial latitude/longitude coordinates in GeoPandas, filter out points outside bounding boxes, and spatially join records to census tracts.",data_analysis
+"Draft an executive product pitch and feature overview for Guardvane, an AI prompt governance and classification platform for security teams.",creative_and_writing
+Visualize pairwise correlations and kernel density estimates across 8 financial ratios using a customized Seaborn PairGrid.,data_analysis
+Build an Express.js middleware that parses incoming Stripe webhook raw bodies and attaches the verified event object to req.stripeEvent.,code_generation
+Write an engaging GitHub issue calling for community feedback on proposed syntax changes for a configuration DSL.,creative_and_writing
+Write a step-by-step conceptual guide explaining eventual consistency and conflict-free replicated data types (CRDTs) to frontend engineers.,creative_and_writing
+"Calculate the false discovery rate when screening 10,000 log lines for an anomaly that occurs with 0.1% base prevalence using a detector with 99% sensitivity and 98% specificity.",reasoning_and_math
+"Calculate the Shannon entropy in bits of a password policy that selects 4 random words uniformly from a dictionary of 7,776 words.",reasoning_and_math
+Build a responsive CSS Grid layout for a dashboard sidebar that collapses into a bottom navigation bar on viewports narrower than 768px.,code_generation
+"Audit this PostgreSQL SECURITY DEFINER function that fails to set a fixed search_path, exposing it to schema hijacking.",security_analysis
+"Solve the dynamic programming recurrence for edit distance between two strings of lengths m and n, and determine the space optimization needed to reconstruct the alignment path (Hirschberg's algorithm).",reasoning_and_math
+"Build a React controlled multi-select combobox with keyboard arrow navigation, ARIA attributes, and tag removal.",code_generation
+"In an M/M/1 queueing system with arrival rate lambda = 40 requests/sec and service rate mu = 50 requests/sec, calculate the average queue length and mean response time.",reasoning_and_math
+Run a Kruskal-Wallis H-test followed by Dunn's post-hoc pairwise comparisons across four pricing tiers in Python.,data_analysis
+Inspect this Terraform IAM policy granting iam:PassRole on * resources alongside ec2:RunInstances for privilege escalation paths.,security_analysis
+Check this React component using dangerouslySetInnerHTML with DOMPurify—are custom SVG or data-URI attributes still creating XSS sinks?,security_analysis
+Draft a response to a critical Hacker News comment addressing latency concerns in our newly launched edge database engine.,creative_and_writing
+"Write a polite, constructive code review comment template for guiding junior developers toward smaller, single-responsibility pull requests.",creative_and_writing
+Write a persuasive architectural decision record (ADR) proposing the adoption of OpenTelemetry across all backend Go and Python microservices.,creative_and_writing
+"Analyze Amdahl's Law: if 15% of an application's execution time is strictly serial, what is the theoretical maximum speedup achievable across 64 CPU cores?",reasoning_and_math
+Summarize A/B test power analysis in Python: compute required sample size per variant to detect a 2.5% relative lift at 80% power and alpha=0.05.,data_analysis
+Derive the gradient of the cross-entropy loss with respect to the pre-softmax logits z_i for a multi-class neural network classifier.,reasoning_and_math
+Compute cohort LTV-to-CAC payback period in months from subscription billing and marketing spend tables in Pandas.,data_analysis
+Analyze this PostMessage event listener in our frontend iframe integration that omits event.origin verification.,security_analysis
+"Build a Pandas pivot table with multi-index columns comparing YoY gross margin, unit volume, and average discount rate across sales territories.",data_analysis
+Determine the expected number of trials needed to observe all k distinct coupon types (Coupon Collector's Problem) and evaluate it for k = 10.,reasoning_and_math
+Evaluate uplift modeling performance using Qini curves and area under the uplift curve (AUUC) in Python.,data_analysis
+Write a C# source generator that inspects partial classes marked with [AutoMap] and emits property-to-property mapping code at compile time.,code_generation
+Write clear error remediation documentation for 10 common HTTP 4xx and 5xx error codes returned by our payment gateway.,creative_and_writing
+Draft a grant proposal narrative seeking open-source funding to maintain a memory-safe image decoding library.,creative_and_writing
+How do I configure VS Code tasks.json and launch.json to attach a Python debugger to a running process inside a Docker container?,general_instruction
+Inspect this MongoDB query builder in Node.js where req.body JSON objects are passed directly into db.users.find() for NoSQL operator injection.,security_analysis
+"Draft a clear architectural overview explaining how our multi-tenant isolation model separates compute, storage, and encryption keys.",creative_and_writing
+How do I create an SSH config alias in ~/.ssh/config that connects to a private EC2 instance through a bastion host using ProxyJump?,general_instruction
+Audit this SSH bastion host configuration allowing agent forwarding and weak diffie-hellman-group1-sha1 key exchange.,security_analysis
+Build a Swift async/await network client wrapper that transparently refreshes expired OAuth2 bearer tokens on 401 responses.,code_generation
+"Compose an engineering retrospective summary capturing what went well, what slipped, and concrete action items for the next sprint.",creative_and_writing
+Analyze this Ruby on Rails controller using params.permit! before mass-assigning attributes to the User model for privilege escalation.,security_analysis
+"How do I set up pre-commit hooks in a repository to run ruff, black, and trailing-whitespace checks automatically before every commit?",general_instruction
+Give me the tcpdump command to capture HTTP traffic on interface eth0 port 8080 and write it to a pcap file for Wireshark.,general_instruction
+Show me the xargs -P command to run curl health checks across a list of 200 URLs with 16 parallel workers.,general_instruction
+How do I configure Prometheus scrape_configs in prometheus.yml to discover targets dynamically via Consul or file_sd_configs?,general_instruction
+"Show me how to create a swapfile of 4GB on Ubuntu, set proper 600 permissions, activate it, and tune vm.swappiness.",general_instruction
+"Write a clear privacy policy summary section tailored for developers using our telemetry SDK, detailing what metadata is collected and how to opt out.",creative_and_writing
+"Calculate the throughput bottleneck of a network link with 10 Gbps bandwidth, 1500-byte MTU, 40-byte TCP/IP headers, and 50 ms RTT when TCP window size is capped at 64 KB.",reasoning_and_math
+Prove whether the greedy interval scheduling algorithm (selecting earliest finish time first) always yields an optimal non-overlapping subset of intervals.,reasoning_and_math
+"Write a DuckDB SQL query to join three partitioned Parquet files on S3 and compute p50, p95, and p99 response times per microservice.",data_analysis
+Perform k-means clustering with silhouette score and elbow method diagnostics on normalized e-commerce browsing behavior metrics.,data_analysis
+"Given a Pandas DataFrame of 2 million e-commerce clickstream events, calculate the 7-day rolling conversion rate grouped by acquisition channel and device type.",data_analysis
+Review our supply-chain dependency lockfile strategy to prevent dependency confusion attacks on private internal npm packages.,security_analysis
+Debug why my React useEffect hook enters an infinite re-render loop when passing an inline filter object to a custom data fetching hook.,code_generation
+Assess our multi-tenant REST API for Insecure Direct Object Reference (IDOR) flaws where /api/v1/invoices/{invoiceId} checks authentication but not tenant ownership.,security_analysis
+How can I inspect the layers and file sizes inside a Docker image from the terminal using docker history or dive?,general_instruction
+Walk me through setting up Let's Encrypt wildcard certificates via Certbot DNS-01 challenge using the Cloudflare DNS plugin.,general_instruction
+Create a TypeScript Zod schema that validates discriminated configuration objects and infers strict static types for downstream consumers.,code_generation
+"Generate a TypeScript utility type DeepPartial<T> that recursively makes every property, nested object, and array element optional.",code_generation
+Write a SQL query to detect circular money transfers (A -> B -> C -> A) within a 24-hour window in a fintech ledger table.,data_analysis
+"In an Raft consensus cluster of 5 nodes, trace why a leader cannot immediately commit log entries from previous terms solely by counting replicas.",reasoning_and_math
+Calculate the expected depth of a randomly built binary search tree formed by inserting n distinct keys in uniform random order.,reasoning_and_math
+"Clean malformed UTF-8 encodings, HTML entities, and zero-width characters from scraped product descriptions in Pandas.",data_analysis
+"Write a changelog entry in Keep a Changelog format summarizing breaking changes, deprecations, and performance improvements in SDK v2.0.0.",creative_and_writing
+Formulate the maximum-flow minimum-cut theorem intuition and construct a flow network where Ford-Fulkerson with arbitrary augmenting paths takes O(E * max_flow) steps.,reasoning_and_math
+Implement a token bucket rate limiter middleware in Go compatible with net/http standard library handlers.,code_generation
+Formulate the dual linear program for a primal maximization problem and state the Weak Duality Theorem inequality.,reasoning_and_math
+Prove that every finite deterministic finite automaton (DFA) has a unique minimal equivalent DFA up to state isomorphism.,reasoning_and_math
+Inspect this regex ReDoS vulnerability in our email validation middleware when processing 50KB malformed strings.,security_analysis
+"Give me the tar command to archive a project folder while excluding .git, __pycache__, and .env files.",general_instruction
+Inspect this Windows service executable path containing unquoted spaces inside C:\Program Files\Vendor App\service.exe for privilege escalation.,security_analysis
+Compute the asymptotic time complexity of Floyd-Warshall all-pairs shortest paths and explain how to detect negative cycles from the diagonal entries.,reasoning_and_math
+Provide the AWS CLI command using --query and --output text to list all unattached EBS volumes older than 30 days.,general_instruction
+Derive the Bayes optimal decision boundary for binary classification under unequal misclassification costs C_FP and C_FN.,reasoning_and_math
+Evaluate our cryptographic key derivation implementation that uses a single round of SHA-256 with a static application-wide salt for password hashing.,security_analysis
+"A load balancer routes incoming requests independently with probability 0.7 to Server A and 0.3 to Server B; if Server A fails 2% of requests and Server B fails 5%, find the posterior probability that a failed request came from Server B.",reasoning_and_math
+"Draft a documentation page comparing synchronous REST calls, asynchronous webhooks, and streaming gRPC for partner integrations.",creative_and_writing
+Audit this Python Jinja2 template rendering user-provided strings via Template(user_input).render() for Server-Side Template Injection (SSTI).,security_analysis
+Analyze this PDF generator microservice using headless Chromium that renders user-supplied HTML templates for local file read via file:// iframes.,security_analysis
+Audit this Node.js Express search endpoint for SQL injection vulnerabilities where user-supplied sortBy and filter parameters are interpolated into a raw SQL string.,security_analysis
+Audit this Apache Struts / Spring expression evaluation endpoint where user input reaches SpEL parser context.,security_analysis
+How do I use strace on Linux to trace file open and network connect system calls made by a failing binary?,general_instruction
+Write an explanatory architecture overview comparing event-driven choreography versus orchestration for order fulfillment workflows.,creative_and_writing
+Walk me through configuring Supervisor on Linux to manage and auto-restart four worker processes from a single .conf file.,general_instruction
+Write a PostgreSQL query using window functions (LAG and DENSE_RANK) to compute month-over-month net revenue retention per customer cohort.,data_analysis
+Analyze the worst-case search complexity of a skip list with promotion probability p = 0.5 versus expected O(log n) search time.,reasoning_and_math
+Review our magic-link login flow where single-use tokens remain valid for 24 hours and are not invalidated after password change or logout.,security_analysis
+Write a Python dataclass decorator or metaclass that freezes attributes after __post_init__ while allowing cached_property evaluation.,code_generation
+Implement a trie data structure in TypeScript with prefix autocomplete suggestions ranked by insertion frequency.,code_generation
+Review our cloud metadata service IMDSv1 vs IMDSv2 enforcement across EC2 auto-scaling groups.,security_analysis
+Compose a deprecation notice email giving API consumers 90 days to migrate from legacy v1 XML endpoints to v2 JSON APIs.,creative_and_writing
+Write a C# background worker using IHostedService that polls an Azure Service Bus queue and processes messages concurrently with a SemaphoreSlim limit of 10.,code_generation
+Prove that every tree is a bipartite graph by constructing an explicit 2-coloring based on shortest path distances from an arbitrary root.,reasoning_and_math
+Write a SQL query to identify cannibalization effects when a new product launch reduces sales of existing sibling SKUs in the same store.,data_analysis
+Fix the TypeScript narrowing error in my discriminated union switch statement when handling nested API response states.,code_generation
+Review our multi-factor authentication (MFA) verification endpoint for response manipulation and missing brute-force lockout controls.,security_analysis
+Analyze this Content-Security-Policy header containing 'unsafe-inline' and wildcard script-src domains to explain how an attacker could exfiltrate session tokens via DOM XSS.,security_analysis
+Audit data drift between training and production feature distributions using Population Stability Index (PSI) and Kolmogorov-Smirnov tests.,data_analysis
+"Write a Go http.RoundTripper wrapper that logs outbound request latency, status codes, and correlation IDs using slog.",code_generation
+Summarize warehouse pick-and-pack cycle times in Pandas using trimmed means and winsorized standard deviations to mitigate scanner glitches.,data_analysis
+Analyze this timing side-channel vulnerability in our custom HMAC API signature comparison using standard == string equality.,security_analysis
+Review our AWS Lambda execution role and environment variable storage for credential leakage via verbose error stack traces.,security_analysis
+Walk me through configuring GitHub Branch Protection rules via gh CLI to require status checks and at least one code owner review.,general_instruction
+Show how to reduce the Vertex Cover problem to Independent Set in polynomial time and prove correctness in both directions.,reasoning_and_math
+Evaluate the cache miss behavior of matrix multiplication C = A * B for N x N matrices in row-major order when comparing i-j-k versus i-k-j loop nestings.,reasoning_and_math
+"Write a developer documentation guide on handling pagination, cursor expiration, and idempotent retries in our REST API.",creative_and_writing
+Compute the exact number of binary strings of length 10 that do not contain two consecutive 1s.,reasoning_and_math
+Formulate the Bellman-Ford relaxation invariant and prove that after V - 1 iterations all shortest path distances without negative cycles have converged.,reasoning_and_math
+Calculate the expected number of probes for an unsuccessful search in an open-addressing hash table with uniform hashing at load factor alpha = 0.75.,reasoning_and_math
+"Provide the steps to configure an HTTP/HTTPS corporate proxy across apt, curl, git, and Docker daemon settings on Ubuntu.",general_instruction
+Give me the bash command using find and xargs to locate all .log files older than 14 days larger than 50MB and compress them in place with gzip.,general_instruction
+Detect bot traffic bursts in web analytics data by analyzing inter-arrival time entropy and user-agent concentration per IP subnet.,data_analysis
+Prove that the chromatic number of any tree with at least two vertices is exactly 2.,reasoning_and_math
+Build an Angular standalone directive that automatically traps keyboard focus inside modal dialogs for WCAG accessibility.,code_generation
+Solve the linear recurrence a_n = 5a_{n-1} - 6a_{n-2} with initial conditions a_0 = 2 and a_1 = 5.,reasoning_and_math
+Write a tutorial-style documentation page showing developers how to integrate our Python SDK into a FastAPI microservice in under five minutes.,creative_and_writing
+Audit this Kubernetes PodSecurityPolicy / Pod Security Admission setup allowing hostPID and privileged capabilities.,security_analysis
+Draft a knowledge base article helping non-technical workspace admins configure domain verification DNS TXT records.,creative_and_writing
+How do I configure vim or neovim in init.lua to set 2-space indentation for YAML/JSON and 4-space indentation for Python?,general_instruction
+Create a dual-axis Matplotlib time-series chart plotting daily active users as bars and 14-day rolling churn rate as a line with shaded recession bands.,data_analysis
+Write a Python generator pipeline that reads multi-gigabyte gzipped JSONL logs line by line and yields filtered error events.,code_generation
+Analyze this Subresource Integrity (SRI) omission on third-party CDN scripts loaded on our checkout payment page.,security_analysis
+Resample irregular IoT sensor timestamps in Pandas into uniform 5-minute intervals using forward-fill for categorical states and linear interpolation for temperature.,data_analysis
+Check this Python tempfile.mktemp() usage for insecure temporary file race conditions.,security_analysis
+Audit this open redirect flaw in our login callback URL parameter (?next=//evil.com) that bypasses relative-path regex checks.,security_analysis
+How do I use awk to sum values in column 4 grouped by unique keys in column 2 from a tab-delimited file?,general_instruction
+Perform a secure code review on this Java XML parser configuration to verify whether external entity expansion (XXE) is fully disabled.,security_analysis
+Implement the A* pathfinding heuristic and grid search in C++17 using std::priority_queue and a flat 1D vector for cache locality.,code_generation
+Inspect this C# ASP.NET Core anti-forgery token setup on state-changing GET endpoints.,security_analysis
+Implement an AVL self-balancing binary search tree insertion and rotation logic in C.,code_generation
+"Calculate the probability of a hash collision when inserting 10,000 keys into a hash table with 2^32 buckets using the birthday paradox approximation.",reasoning_and_math
+Check this PHP unserialize() call on signed cookies where the HMAC key is hardcoded in a public repository.,security_analysis
+"Clean currency formatting anomalies (e.g., '$1,234.50', '1.234,50 EUR', '(450.00)') into standardized float64 USD amounts in Pandas.",data_analysis
+Check this Go zip extraction utility for Zip Slip path traversal when archive entries contain ../ sequences.,security_analysis
+Create a Kotlin Multiplatform expect/actual abstraction for reading and writing encrypted key-value pairs on iOS Keychain and Android Keystore.,code_generation
+"Create a Plotly Express interactive treemap and sunburst chart breaking down cloud infrastructure spend by AWS account, service, and cost-center tag.",data_analysis
+"Refactor this slow Python nested loop over two lists of 100,000 dictionaries into an O(n) dictionary index lookup.",code_generation
+Draft a concise specification summary for a browser extension's permission requests to satisfy Chrome Web Store review reviewers.,creative_and_writing
+"Prove that a connected planar graph with V vertices and E edges satisfies E <= 3V - 6 for V >= 3, and apply this to show K_5 is non-planar.",reasoning_and_math
+Prove that any comparison-based algorithm that merges two sorted lists of size n each requires at least 2n - 1 comparisons in the worst case.,reasoning_and_math
+Draft a technical case study showing how a logistics company cut CI/CD build times by 68% using remote build caching.,creative_and_writing
+"Given two sorted arrays of sizes m and n, justify why finding their combined median can be achieved in O(log(min(m, n))) time via binary search on partition indices.",reasoning_and_math
+"Write a narrative walkthrough of how a single HTTP request traverses our CDN, WAF, API gateway, and service mesh.",creative_and_writing
+"Provide the kubectl commands to drain a Kubernetes worker node gracefully, cordon it from new pods, and inspect stuck terminating pods.",general_instruction
+"Inspect this GraphQL schema and resolver setup for authorization bypasses, introspection exposure, and batching-based brute force vulnerabilities.",security_analysis
+Write a SQL query joining calendar dimension tables to exclude federal holidays when computing business-day SLA turnaround times.,data_analysis
+Analyze this GraphQL batching mutation endpoint for credential stuffing amplification.,security_analysis
+Check this YAML configuration loader using yaml.load() instead of yaml.safe_load() in PyYAML for arbitrary Python object instantiation.,security_analysis
+"Draft a crisp pull request description template encouraging authors to document motivation, testing strategy, and rollback plans.",creative_and_writing
+"Prove that for any graph G, the sum of vertex degrees equals twice the number of edges, and deduce that the number of odd-degree vertices must be even.",reasoning_and_math
+Write a DuckDB SQL query to pivot monthly expense categories into columns dynamically and compute variance against budget targets.,data_analysis
+Provide the Terraform CLI workflow commands to import an existing AWS S3 bucket into state without destroying or recreating the resource.,general_instruction
+Assess this Android WebView configuration with setJavaScriptEnabled(true) and addJavascriptInterface exposed to untrusted external URLs.,security_analysis
+Refactor this 300-line Python switch-case statement for payment gateways into a clean Strategy design pattern using ABC and dataclasses.,code_generation
+Build a gRPC bidirectional streaming server in Go for a real-time collaborative whiteboard cursor sync service.,code_generation
+Write a MySQL 8.0 query to find consecutive streaks of at least 7 daily active logins per user using date subtraction grouping.,data_analysis
+Analyze this Redis instance bound to 0.0.0.0 without ACL authentication for unauthorized config rewrite and SSH key injection.,security_analysis
+Draft a technical whitepaper abstract and executive summary on deterministic PII redaction in real-time LLM inference pipelines.,creative_and_writing
+Walk me through setting up a cross-compilation toolchain in Rust using rustup target add to compile Linux musl binaries on macOS.,general_instruction
+Detect duplicate fuzzy-matched vendor records in a procurement dataset using TF-IDF cosine similarity and agglomerative clustering in scikit-learn.,data_analysis
+Review our S3 bucket IAM policy and presigned URL generation logic to identify privilege escalation or unauthorized object overwrite risks.,security_analysis
+How do I configure an Nginx reverse proxy on Ubuntu 24.04 to forward traffic on port 443 to a local Gunicorn socket with HTTP/2 and gzip enabled?,general_instruction
+Prove that a directed acyclic graph (DAG) with n vertices can have at most n(n - 1)/2 edges and construct the unique graph achieving this bound.,reasoning_and_math
+Show me the chmod and chown commands with setgid bit (2775) so all new files in a shared folder inherit the group ownership.,general_instruction
+"In a distributed system with 7 nodes using majority quorum consensus, what is the maximum number of simultaneous node failures tolerated while preserving both read and write availability?",reasoning_and_math
+"Draft a customer-facing security FAQ explaining our SOC 2 Type II compliance, encryption at rest, and zero-data-retention AI inference guarantees.",creative_and_writing
+Find the asymptotic worst-case complexity of building a binary max-heap in place from an unsorted array of n elements and prove why it is O(n) rather than O(n log n).,reasoning_and_math
+Convert this recursive Fibonacci implementation in Java into an iterative dynamic programming version using O(1) auxiliary space.,code_generation
+Derive the closed-form sum of powers sum_{i=1}^{n} i^2 and verify it for n = 5.,reasoning_and_math
+Prove by mathematical induction that any binary tree with n internal nodes where every internal node has exactly two children has n + 1 leaf nodes.,reasoning_and_math
+"Create an onboarding guide for new backend engineers walking through our codebase conventions, PR review checklist, and staging release cadence.",creative_and_writing
+Write a Ruby on Rails ActiveJob class that generates a multi-sheet CSV export and emails a signed download link upon completion.,code_generation
+Create a Kotlin coroutine Flow operator that buffers emitted sensor readings and emits an averaged batch every 500 milliseconds.,code_generation
+"How do I set up logrotate on Debian so application logs rotate daily, keep 14 compressed archives, and send SIGUSR1 to reload the daemon?",general_instruction
+"Analyze this JWT verification code in Python PyJWT where algorithms=['HS256', 'RS256'] is passed alongside a public RSA key.",security_analysis
+Prove that a graph is Eulerian (contains a closed Euler tour) if and only if it is connected and every vertex has even degree.,reasoning_and_math
+Walk me through setting up a multi-stage Dockerfile for a Go application that compiles a static binary and copies it into a distroless runtime image.,general_instruction
+Inspect this C++ integer overflow in image width * height * 4 buffer allocation before copying pixel data from an untrusted file.,security_analysis
+Show me how to configure direnv with an .envrc file so project environment variables load automatically when cd-ing into the folder.,general_instruction
+Create a Flutter ChangeNotifier provider that manages offline-first SQLite synchronization queues when network connectivity drops.,code_generation
+Implement a Levenshtein edit distance calculator in Rust optimized with two rolling rows instead of a full 2D matrix.,code_generation
+Review our database column-level encryption for PII fields to ensure deterministic encryption isn't leaking equality frequency patterns.,security_analysis
+Write a Java Stream collector that computes running percentiles in a single pass over a list of latency measurements.,code_generation
+Inspect this Docker container running as root with /var/run/docker.sock mounted inside the container for host escape vectors.,security_analysis
+Write a SQL query to track inventory stock-out duration by identifying intervals where cumulative receipts minus shipments hit zero.,data_analysis
+Fix the off-by-one slicing bug in my binary search implementation when searching for the rightmost insertion index.,code_generation
+Implement a Bloom filter in Python using murmurhash3 and a bytearray with configurable false positive probability.,code_generation
+"How do I configure ufw firewall rules on a Linux VPS to allow SSH on a custom port, HTTP/HTTPS, and deny all other incoming traffic?",general_instruction
+Audit this TLS 1.2 cipher suite configuration supporting RSA key exchange without Perfect Forward Secrecy (ECDHE).,security_analysis
+Create a comparison battlecard for our sales engineering team contrasting our managed Kafka service against self-hosted clusters.,creative_and_writing
+Write a PostgreSQL query to compute median and interquartile range (percentile_cont) of ticket first-response time per support agent.,data_analysis
+"Create a Pandas validation suite using Pandera to enforce non-null constraints, valid enum categories, and monotonic timestamps on ingested data.",data_analysis
+Compute covariance shrinkage matrices using Ledoit-Wolf estimation in scikit-learn for high-dimensional asset return series.,data_analysis
+Write a WebGL fragment shader in GLSL that renders a smooth radial vignette effect over an input texture.,code_generation
+Compose an executive summary justifying the ROI of investing in automated end-to-end Playwright test suites.,creative_and_writing
+Implement a suffix array construction algorithm in C++ for fast substring occurrence counting on genomic sequences.,code_generation
+Check this Python subprocess.Popen call with shell=True and user-supplied Git branch names for command injection.,security_analysis
+Identify multicollinearity among 18 predictive features in a credit risk dataset by computing Variance Inflation Factors (VIF) with statsmodels.,data_analysis
+"Review our account enumeration exposure across login, registration, and forgot-password error messages and response timing.",security_analysis
+Implement a thread-safe LRU cache in Go using generics and a doubly linked list with O(1) lookup and eviction.,code_generation
+"Draft a customer onboarding welcome email sequence (Day 1, Day 3, Day 7) guiding developers from API key creation to first production webhook.",creative_and_writing
+Walk me through setting up a local Redis cluster or Sentinel configuration via Docker Compose for testing failover.,general_instruction
+Give me the systemd unit file and systemctl commands to run a Python FastAPI service at boot with automatic restart on failure.,general_instruction
+Analyze this GraphQL depth and complexity limit configuration to see if deeply nested circular queries can trigger a Denial of Service.,security_analysis
+Write a NestJS custom parameter decorator @CurrentUser() that extracts and types the authenticated principal from ExecutionContext.,code_generation
+Inspect this Apache Kafka cluster configuration lacking SASL/SSL authentication and topic-level ACL authorization.,security_analysis
+Analyze this GraphQL mutation that allows nested object creation to bypass field-level role checks enforced only at top-level mutations.,security_analysis
+Write a Snowflake SQL query using QUALIFY ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_time DESC) to extract the latest valid subscription tier.,data_analysis
+"Compose a project kickoff charter defining scope, stakeholders, risks, and milestones for replacing a legacy monolith billing engine.",creative_and_writing
+"Three engineers independently review a pull request and detect a critical bug with probabilities 0.6, 0.7, and 0.8 respectively; calculate the probability that at least two reviewers catch the bug.",reasoning_and_math
+Implement a disjoint-set union (Union-Find) structure with path compression and union by rank in Java.,code_generation
+How do I configure Elasticsearch JVM heap size and vm.max_map_count sysctl settings before starting a production node?,general_instruction
+Write a Dart isolate worker pool to offload heavy JSON parsing from the main Flutter UI thread.,code_generation
+Formulate an integer linear programming (ILP) objective and constraint set to pack microservices with CPU and RAM demands onto heterogeneous servers minimizing total server count.,reasoning_and_math
+Write a Lua script for Redis that atomically checks a sliding window rate limit and increments the request counter in a single round-trip.,code_generation
+How do I configure npm or pip to use an internal Artifactory registry mirror with scoped authentication tokens?,general_instruction
+Give me the python -m http.server or npx serve flags to host a local directory on 0.0.0.0 with CORS headers enabled.,general_instruction
+"Show me the kubectl rollout commands to pause a Kubernetes deployment, inspect rollout history, and undo to revision 3.",general_instruction
+Implement Dijkstra's shortest path algorithm in Rust using std::collections::BinaryHeap for a directed weighted graph.,code_generation
+Write a Spark SQL query using window frames (RANGE BETWEEN INTERVAL 7 DAYS PRECEDING AND CURRENT ROW) on timestamp columns.,data_analysis
+Evaluate this race condition in our e-commerce coupon redemption endpoint where concurrent requests bypass single-use redemption limits (TOCTOU).,security_analysis
+"In a two-phase commit protocol with 1 coordinator and N participants, count the exact number of network messages exchanged in the failure-free commit path.",reasoning_and_math
+Evaluate this Android exported ContentProvider lacking readPermission/writePermission attributes for unauthorized local database access.,security_analysis
+Create a Django custom model manager that filters out soft-deleted records by default while providing an all_with_deleted() queryset method.,code_generation
+Show me how to use jq in the terminal to filter a JSON array of cloud instances for running status and output tab-separated IDs and private IPs.,general_instruction
+Review this API key generation script using Math.random() in JavaScript for cryptographic predictability.,security_analysis
+How do I export a Conda environment cleanly without platform-specific build hashes so teammates on macOS and Linux can recreate it?,general_instruction
+A RAID-6 array consists of 8 drives of 4 TB each; calculate the usable storage capacity and the probability of data loss if independent annual drive failure rate is 2% during a 24-hour rebuild.,reasoning_and_math
+Fix the memory leak in my C++ event loop where shared_ptr cycles between Listener and Dispatcher objects prevent destructors from firing.,code_generation
+Build a zero-dependency JavaScript parser that converts INI configuration strings into nested JSON objects with type coercion.,code_generation
+Evaluate classifier calibration by plotting reliability curves and computing Brier scores across predicted probability deciles.,data_analysis
+"Give me the psql meta-commands to list database sizes, active long-running queries, and index hit ratios.",general_instruction
+Review this iOS Keychain item accessibility setting using kSecAttrAccessibleAlways for exposure on jailbroken or backed-up devices.,security_analysis
+"Compose a quarterly engineering OKR proposal focused on reducing p99 API latency, improving test coverage, and automating canary rollbacks.",creative_and_writing
+Design a statistical A/B test evaluation script in Python using SciPy to check sample ratio mismatch (SRM) via chi-square and compute Welch's t-test p-values.,data_analysis
+Create a set of Agile user stories with Given/When/Then acceptance criteria for an enterprise SSO SAML configuration portal.,creative_and_writing
+Prove that the intersection of two regular languages is always regular using product automaton construction.,reasoning_and_math
+Write a SQL query to calculate average order interval (days between consecutive purchases) per repeat buyer.,data_analysis
+Give me the git reflog workflow to recover commits lost after an accidental git reset --hard HEAD~5.,general_instruction
+Audit this LDAP authentication bind query that concatenates username input directly into (&(uid=%s)(objectClass=person)) for LDAP injection.,security_analysis
+Review our API gateway rate limiter bypass where appending URL-encoded characters or uppercase path segments evades route matching.,security_analysis
+Write a Snowflake SQL query using MATCH_RECOGNIZE to detect W-shaped double-bottom price patterns in intraday stock tick data.,data_analysis
+Give me the ffmpeg terminal command to extract a 15-second 1080p clip from a video starting at 01:20 without re-encoding.,general_instruction
+"Evaluate recommendation engine offline metrics in Python: compute NDCG@10, MAP@10, and catalog coverage across user segments.",data_analysis
+Write a Solidity smart contract function that distributes ERC-20 tokens to an array of recipients using the pull-over-push withdrawal pattern.,code_generation
+"Prove that in any rooted tree, the lowest common ancestor (LCA) of two nodes u and v can be reduced to a Range Minimum Query (RMQ) over an Euler tour.",reasoning_and_math
+Draft a technical whitepaper section contrasting symmetric HMAC signing with asymmetric Ed25519 signatures for webhook authenticity.,creative_and_writing
+Draft a technical interview rubric for evaluating candidates during a 60-minute distributed systems design interview.,creative_and_writing
+Audit this Go template rendering handler using template.HTML on user-submitted markdown comments for stored Cross-Site Scripting.,security_analysis
+Calculate the number of distinct topological orderings of a directed path graph versus a star graph rooted at the center with n vertices.,reasoning_and_math
+Evaluate the computational complexity class of 2-SAT versus 3-SAT and outline the linear-time implication graph algorithm for 2-SAT.,reasoning_and_math
+How do I inspect the exact DNS lookup path and authoritative nameserver responses using dig +trace?,general_instruction
+Write a C# LINQ extension method BatchBy<T>(int size) that lazily yields IEnumerable<IReadOnlyList<T>> chunks without materializing the source.,code_generation
+Show why Reservoir Sampling selects each item from an unknown-length stream of N items into a sample of size k with exact uniform probability k/N.,reasoning_and_math
+Perform stratified train/validation/test splitting in scikit-learn while preserving group integrity by customer_id to prevent data leakage.,data_analysis
+"In a Byzantine fault-tolerant consensus protocol, prove why at least 3f + 1 total replicas are required to tolerate f malicious replicas under asynchronous network assumptions.",reasoning_and_math
+Give me the docker system prune and builder prune commands to reclaim disk space safely without deleting named volumes.,general_instruction
+Compute weighted average cost of capital (WACC) and sensitivity tables across discount rates using NumPy broadcasting.,data_analysis
+Compute net promoter score (NPS) breakdown and statistical margin of error across quarterly survey waves in Pandas.,data_analysis
+"Compose an internal engineering newsletter update celebrating Q3 reliability milestones, open-source contributions, and upcoming hackathon themes.",creative_and_writing
+Write a punchy README quickstart section and architecture diagram caption for a lightweight Python task scheduler.,creative_and_writing
+Analyze this SQLite query builder for boolean-based blind SQL injection inside an ORDER BY ASC/DESC clause.,security_analysis
+Write crisp UI tooltip descriptions for advanced configuration toggles in a Kubernetes cluster autoscaler dashboard.,creative_and_writing
+Analyze AB test novelty effects by plotting cumulative treatment lift day-by-day over a 28-day experiment window.,data_analysis
+"Given a 64-bit snowflake ID generator allocating 41 bits for millisecond timestamps, 10 bits for machine ID, and 12 bits for sequence numbers, compute the exact rollover lifespan in years and peak throughput per second.",reasoning_and_math
+Evaluate whether our CORS configuration reflecting any Origin header alongside Access-Control-Allow-Credentials: true permits cross-origin account takeover.,security_analysis
+Audit this AES-GCM encryption helper that reuses a hardcoded 12-byte nonce across multiple encrypted database records.,security_analysis
+Compose an internal runbook narrative explaining escalation paths and customer communication protocols during Severity-1 security incidents.,creative_and_writing
+Create a D3.js reusable zoomable timeline axis component in TypeScript that dynamically adjusts tick intervals from years to minutes.,code_generation
+"Analyze marketing attribution weights across multi-touch customer journeys by comparing first-touch, last-touch, and Markov chain removal effects in Python.",data_analysis
+Give me the journalctl commands to tail logs for a specific systemd unit since the last boot and filter by priority error.,general_instruction
+Prove that any context-free language can be converted into Chomsky Normal Form without changing the generated language (excluding epsilon).,reasoning_and_math
+Walk me through configuring Docker Buildx to build and push multi-architecture (linux/amd64 and linux/arm64) container images to GHCR.,general_instruction
+Derive the time complexity of Strassen's matrix multiplication recurrence T(n) = 7T(n/2) + O(n^2) and compare the exponent against standard O(n^3).,reasoning_and_math
+Solve the recurrence relation T(n) = 3T(n/2) + n log n using the Master Theorem and state the asymptotic tight bound.,reasoning_and_math
+Audit this Vault dynamic secrets lease revocation mechanism to ensure compromised database credentials expire immediately.,security_analysis
+"Determine the optimal cache eviction policy (Belady's MIN algorithm) on a cache of size 3 for the page reference string [1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5] and count total page faults.",reasoning_and_math
+Assess this WebAssembly sandbox boundary to verify whether imported host functions expose arbitrary filesystem access.,security_analysis
+"Derive the total number of edges in a complete bipartite graph K_{m,n} and determine when it contains a Hamiltonian cycle.",reasoning_and_math
+Provide the gcloud CLI commands to authenticate Docker with Artifact Registry and list image tags by creation timestamp.,general_instruction
+How do I detect and handle seasonal anomalies in daily SaaS API usage metrics using STL decomposition and interquartile range thresholds in Python?,data_analysis
+Write a technical book chapter introduction introducing zero-copy networking and kernel bypass concepts in Linux.,creative_and_writing
+Perform hierarchical clustering with Ward linkage on normalized country macroeconomic indicators and plot a dendrogram in SciPy.,data_analysis
+Create a marketing one-pager copy block for a developer-first feature flagging tool emphasizing sub-millisecond edge evaluation.,creative_and_writing
+"Create a glossary of 15 essential observability terms (traces, spans, exemplars, cardinality, SLO burn rate) for new SRE hires.",creative_and_writing
+Create a Python Numba @njit compiled function to accelerate pairwise Euclidean distance matrix computation on 2D float64 arrays.,code_generation
+Walk me through setting up dual Git identities (work vs personal email and signing keys) automatically based on directory path using includeIf.,general_instruction
+"Write a Bash-compatible POSIX sh function that parses semantic version strings into major, minor, and patch variables without external tools.",code_generation
+How do I write a GraphQL resolver in Apollo Server with DataLoader batching to solve the N+1 query problem on nested user organizations?,code_generation
+Draft an empathetic support response acknowledging a reported edge-case data sync bug and outlining the immediate workaround.,creative_and_writing
+"Walk me through configuring a GitHub Actions matrix strategy to test a library across Python 3.10, 3.11, and 3.12 on Ubuntu and macOS.",general_instruction
+Compose a follow-up email to a prospective enterprise client summarizing our security architecture call and attaching compliance artifacts.,creative_and_writing
+Prove whether the halting problem remains undecidable when restricted to Turing machines that take an empty input tape.,reasoning_and_math
+Perform principal component analysis (PCA) in scikit-learn on normalized customer survey responses and plot cumulative explained variance.,data_analysis
+Write an Android Jetpack Compose LazyColumn item with swipe-to-dismiss gestures and an undo snackbar trigger.,code_generation
+Write a comprehensive migration guide helping users upgrade from version 1.x to 2.x of our React state management library.,creative_and_writing
+Write a PostgreSQL query leveraging jsonb_array_elements to flatten nested survey answers and calculate response percentages per question.,data_analysis
+Compose a mentoring feedback summary for a mid-level developer highlighting strengths in debugging and growth areas in system design.,creative_and_writing
+Implement a segment tree with lazy propagation in C++ to support range addition updates and range minimum queries.,code_generation
+Walk me through setting up a local MinIO S3-compatible server in Docker and configuring an mc client alias and bucket policy.,general_instruction
+How do I configure Chrome or Edge flags from the command line to launch a clean profile with remote debugging enabled on port 9222?,general_instruction
+Run a Mann-Whitney U non-parametric test and bootstrap 95% confidence intervals for median order value between control and treatment groups.,data_analysis
+"Determine whether the greedy coin change algorithm always produces the fewest coins for the canonical denomination set {1, 3, 4} when making change for 6.",reasoning_and_math
+Write a technical newsletter deep dive breaking down how modern browsers optimize JavaScript JIT compilation and hidden classes.,creative_and_writing
+Implement a circular doubly linked deque in Go with dynamic slice resizing and zero memory leaks on pop operations.,code_generation
+How do I configure Git to use delta as an interactive side-by-side diff pager with syntax highlighting?,general_instruction
+Implement a topological sort using Kahn's algorithm in TypeScript to resolve task execution order and detect circular dependencies.,code_generation
+"What are the steps to initialize a Python project using uv, pin Python 3.12, add dev dependencies, and lock the virtual environment?",general_instruction
+"Create a Seaborn / Matplotlib multi-panel visualization showing distribution violin plots, median confidence intervals, and outlier annotations for latency across regions.",data_analysis
+Refactor this legacy PHP 7 procedural script into a PSR-4 compliant PHP 8.2 class using constructor property promotion and readonly properties.,code_generation
+Write a Python Pydantic v2 validator that normalizes international phone numbers to E.164 format and rejects invalid country codes.,code_generation
+"Write a crisp style guide section defining naming conventions for REST endpoints, boolean query flags, and ISO timestamp fields.",creative_and_writing
+Create a pitch deck narrative script for a 5-minute demo of an automated accessibility testing tool integrated into GitHub Pull Requests.,creative_and_writing
+Provide the steps to configure CoreDNS in Kubernetes to forward queries for a private corporate domain to an upstream DNS server.,general_instruction
+Prove that 2^n = O(3^n) while 3^n != O(2^n) using formal limit definitions of asymptotic notation.,reasoning_and_math
+Write a SQL query with recursive CTEs to roll up hierarchical product category sales from leaf SKUs to top-level departments.,data_analysis
+Derive the tight Big-O time and space complexity of solving the 0/1 Knapsack problem using dynamic programming when weights are bounded by W.,reasoning_and_math
+Audit this Elixir Phoenix controller using String.to_atom on arbitrary JSON keys from public HTTP requests for atom table exhaustion DoS.,security_analysis
+How do I configure Zsh completion and autosuggestions on macOS using Homebrew without slowing down shell startup time?,general_instruction
+"Explain why Dijkstra's algorithm fails on graphs containing negative-weight edges even when no negative-weight cycles exist, providing a minimal 3-vertex counterexample.",reasoning_and_math
+Implement a consistent hashing ring in Go with virtual nodes so adding a cache shard minimizes key redistribution.,code_generation
+Refactor this bloated React class component with componentDidUpdate lifecycle logic into a functional component using useReducer.,code_generation
+Debug why my Python regex catastrophic backtracking hangs the worker thread on malformed HTML input and rewrite it using possessive/atomic patterns.,code_generation
+"Perform RFM (Recency, Frequency, Monetary) customer segmentation in Pandas using quintile binning and summarize average lifetime value per segment.",data_analysis
+Compose a post-hackathon wrap-up blog post spotlighting the winning prototypes and how two features are graduating to production.,creative_and_writing
+Assess our rate-limiting middleware that trusts the X-Forwarded-For header without stripping untrusted client-supplied proxy hops.,security_analysis
+Write a Redshift SQL query using APPROXIMATE COUNT(DISTINCT user_id) and HLL sketches to estimate unique weekly visitors across mobile apps.,data_analysis
+Write a SQL query using LATERAL joins to compute top-selling product pairs frequently purchased within the same transaction.,data_analysis
+"Write a DuckDB SQL query to inspect Parquet file row-group metadata, compression ratios, and column null counts.",data_analysis
+Give me the openssl command to generate a self-signed wildcard TLS certificate with Subject Alternative Names (SAN) for *.local.test.,general_instruction
+Compose a crisp product description and key differentiators list for an AI-assisted pull request reviewer built for regulated industries.,creative_and_writing
+Audit this password reset token generator that seeds random.Random with the current Unix timestamp in milliseconds.,security_analysis
+Suppose a cache has a 92% hit rate with a 1 ms hit latency and a 45 ms miss penalty; compute the effective average memory access time (AMAT) and the speedup required in miss penalty to achieve a 3 ms AMAT.,reasoning_and_math
+"Draft a user story backlog for an MVP mobile expense-tracking app, broken into epics for receipt scanning, categorization, and CSV export.",creative_and_writing
+How can I configure PostgreSQL pg_hba.conf and postgresql.conf to accept scram-sha-256 TLS connections from a specific VPC CIDR block?,general_instruction
+"Analyze this Kubernetes RBAC ClusterRole that grants get, list, and watch on secrets across all namespaces to a CI/CD service account.",security_analysis
+Create an Altair / Vega-Lite interactive scatter plot with linked brush selection filtering a bar chart of category counts.,data_analysis
+Draft a post-release retrospective email thanking the on-call rotation and summarizing metrics from a major Black Friday traffic surge.,creative_and_writing
+Analyze this WebRTC peer connection leak that exposes internal RFC1918 LAN IP addresses behind a corporate VPN.,security_analysis
+Implement a binary indexed tree (Fenwick tree) in Python supporting range sum queries and point updates in O(log n) time.,code_generation
+Create a React Native animated bottom sheet component using react-native-reanimated gestures with snap points at 25% and 80% screen height.,code_generation
+"Write concise marketing copy for a pricing page tier table contrasting Free, Pro, and Enterprise developer plans.",creative_and_writing
+Show me how to set up an automated nightly cron job that runs a backup script and logs both stdout and stderr with timestamps.,general_instruction
+"Show me the curl flags to inspect full TLS handshake details, DNS resolution timing, and HTTP/2 response headers without downloading the body.",general_instruction
+Write an educational blog post explaining common pitfalls with floating-point arithmetic in financial ledgers and why decimal types matter.,creative_and_writing
+Debug why my WebSocket client in Node.js silently drops connection after 60 seconds behind an AWS ALB by implementing ping/pong heartbeats.,code_generation
+Build a custom React hook named useDebouncedQuery that cancels in-flight fetch requests via AbortController whenever the search term changes.,code_generation
+Analyze the worst-case number of rotations required during a single insertion versus a single deletion in an AVL tree of height h.,reasoning_and_math
+How do I check disk inode exhaustion on a Linux server when df -h shows free space but writes fail with 'No space left on device'?,general_instruction
+Review our WebSocket handshake handler to determine if missing Origin validation enables Cross-Site WebSocket Hijacking (CSWSH).,security_analysis
+Analyze the worst-case time complexity of Union-Find when using union by size without path compression.,reasoning_and_math
+Draft a developer-facing technical blog post explaining how our engineering team migrated 40TB of Postgres data to sharded clusters with zero downtime.,creative_and_writing
+Write a SwiftUI view modifier that applies a shimmering skeleton loading animation while an async data fetch is in progress.,code_generation
+Analyze this JWT jku/kid header processing logic that fetches remote JWKS keys without an allowlist of trusted issuers.,security_analysis
+Compute the modular multiplicative inverse of 17 modulo 3120 using the Extended Euclidean Algorithm.,reasoning_and_math
+Audit this Spring Security filter chain to verify if permitAll() on /admin/** patterns can be bypassed via URL path normalization or trailing slashes.,security_analysis
+How do I forward local port 5432 to a remote PostgreSQL RDS instance through an AWS Systems Manager Session Manager tunnel?,general_instruction
+Create a Python pytest fixture that spins up an isolated PostgreSQL schema per test worker and rolls back transactions after each test.,code_generation
+Inspect missingness patterns in a clinical trial dataset using missingno and test whether missing lab values are MCAR or MAR via logistic regression.,data_analysis
+Write a SQL query to compute customer reactivation rates—users who churned for 60+ days and subsequently placed a new order.,data_analysis
+Show me how to use git bisect run with an automated test script to pinpoint the exact commit that introduced a regression.,general_instruction
+Prove that Kruskal's minimum spanning tree algorithm satisfies the cut property for any connected undirected graph with distinct edge weights.,reasoning_and_math
+How do I configure Docker Compose healthchecks so the backend container waits until Postgres is actually accepting connections before starting?,general_instruction
+"Write a compelling App Store release note for a markdown note-taking app highlighting offline sync, Vim keybindings, and backlink graphs.",creative_and_writing
+Show me the exact git commands to squash my last four commits on a feature branch into a single commit and force-push safely with --force-with-lease.,general_instruction
+Show me the openssl s_client command to inspect the full certificate chain and expiration date of a remote TLS endpoint.,general_instruction
+"Write a clear explanation of rate-limiting headers (X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After) for our public API docs.",creative_and_writing
+Analyze this Python Flask file download route for path traversal risks when os.path.join is called with an unsanitized filename query parameter.,security_analysis
+Write a developer advocacy tutorial script for a 10-minute YouTube walkthrough building a real-time chat app with Server-Sent Events.,creative_and_writing
+Provide the steps to configure Podman rootless containers to bind to privileged ports 80 and 443 on Fedora.,general_instruction
+Prove that the maximum matching size in any bipartite graph equals the minimum vertex cover size (Konig's theorem statement and small example).,reasoning_and_math
+Calculate the probability that two randomly chosen 128-bit UUIDv4 identifiers (with 122 random bits) collide in a database storing 10^9 records.,reasoning_and_math
+Review this Python pickle deserialization endpoint receiving base64 payloads from an internal message broker—what remote code execution risks remain?,security_analysis
+"In a consistent hash ring with 3 replication factor, compute the probability that a random dual-disk failure causes data unavailability across 50 storage nodes.",reasoning_and_math
+"Write microcopy and friendly, actionable error messages for an OAuth consent screen and API rate-limit exceeded modal.",creative_and_writing
+Calculate the probability of winning the Monty Hall game when generalizing to N = 10 doors where the host opens 8 goat doors before offering a switch.,reasoning_and_math
+Review our Stripe webhook signature verification code to confirm constant-time comparison is used and replay attacks via old timestamps are blocked.,security_analysis
+Fix the CSS sticky positioning issue where position: sticky fails to stick inside a flex container with overflow-x: hidden.,code_generation
+Give me the curl command to test a GraphQL mutation over HTTPS using a bearer token and variables JSON payload.,general_instruction
+Analyze feature importance and SHAP summary values for a LightGBM gradient boosted model predicting loan default rates.,data_analysis
+Write engaging release notes for a developer-focused terminal emulator introducing GPU-accelerated rendering and split-pane keybindings.,creative_and_writing
+Write an OpenGL vertex buffer layout abstraction in modern C++20 using std::span and RAII resource cleanup.,code_generation
+Build a GraphQL subscription resolver using Redis PubSub in Node.js to push live order status updates to connected clients.,code_generation
+Write an internal engineering handbook page detailing best practices for writing blameless post-mortems and actionable follow-ups.,creative_and_writing
+Compute rolling beta and Sharpe ratios for a portfolio of 15 equities against the S&P 500 benchmark in Pandas.,data_analysis
+Walk me through configuring Caddy as a local reverse proxy with automatic internal HTTPS certificates for localhost subdomains.,general_instruction
+"Write a SQLAlchemy 2.0 async repository class supporting cursor-based keyset pagination over composite (created_at, id) columns.",code_generation
+"Write a SQL query calculating 7-day, 14-day, and 28-day rolling active user ratios (DAU/MAU stickiness) over the past quarter.",data_analysis
+"Write a clean, well-structured FAQ section for a CLI tool covering proxy support, offline caching, and telemetry opt-out.",creative_and_writing
+"Build a Python Celery task chain that downloads an audio file, transcribes it with Whisper, and indexes the transcript into OpenSearch.",code_generation
+Create a Haskell parser combinator using Parsec to parse ISO-8601 duration strings like P3Y6M4DT12H30M5S.,code_generation
+"Analyze text sentiment polarity shifts across 50,000 app store reviews before and after major v4.0 release using VADER and rolling averages.",data_analysis
+Check this Django raw SQL query using string formatting inside extra() for second-order SQL injection vectors.,security_analysis
+Write a Scala tail-recursive function to flatten an arbitrarily nested List[Any] without blowing the JVM call stack.,code_generation
+Review this mobile API certificate pinning fallback logic to check if MITM proxies can downgrade TLS connections silently.,security_analysis
+Review our session fixation protections to verify whether the session identifier rotates immediately upon privilege elevation or login.,security_analysis
+Show why consistent hashing with v virtual nodes per physical server bounds the standard deviation of key load by O(1/sqrt(v)).,reasoning_and_math
+"Prove that the complement of a decidable language is always decidable, whereas the complement of a Turing-recognizable language need not be recognizable.",reasoning_and_math
+Analyze the space complexity of iterative deepening depth-first search (IDDFS) on a uniform branching factor b and depth d compared to breadth-first search.,reasoning_and_math
+Implement an exponential backoff retry decorator in Python that catches transient httpx.NetworkError exceptions and adds random jitter.,code_generation
+How can I reset my local Git working tree and untracked files completely to match origin/main?,general_instruction
+Review our database backup encryption pipeline to verify whether symmetric keys are stored alongside ciphertext in the same S3 bucket.,security_analysis
+"Compose a professional release announcement email to enterprise customers introducing v3.4 dark mode, audit log exports, and webhook retries.",creative_and_writing
+"Write a Python FastAPI endpoint that accepts a multipart file upload, validates that it is a valid Parquet file using pyarrow, and streams it directly to an S3 bucket without saving to disk.",code_generation
+Show me how to inspect open listening TCP ports and identify which process IDs own them on Linux using ss and lsof.,general_instruction
+Write an accessible conceptual overview explaining Bloom filters and probabilistic data structures to junior software developers.,creative_and_writing
+"Provide the Helm CLI commands to add a chart repository, diff proposed values against a live release, and upgrade with atomic rollback.",general_instruction
+Build a Fastify plugin in TypeScript that registers Prometheus HTTP duration histograms and active request gauges.,code_generation
+Compute the expected value and variance of the number of fixed points in a uniformly random permutation of n elements.,reasoning_and_math
+Analyze this DNSSEC and DMARC/DKIM/SPF setup for domain spoofing and email phishing susceptibility.,security_analysis
+Explain mathematically how Count-Min Sketch estimates point query frequencies and why its estimates are strictly one-sided (never underestimating).,reasoning_and_math
+Review our JWT authentication flow: we store refresh tokens in localStorage and access tokens in non-HttpOnly cookies—what exact XSS and CSRF attack vectors does this expose?,security_analysis
+"Compose a conference talk proposal (abstract, learning objectives, and outline) on debugging tail latency in distributed gRPC systems.",creative_and_writing
+Calculate the minimum Hamming distance required for a block error-correcting code to detect up to 4 bit errors and correct up to 2 bit errors.,reasoning_and_math
+"Create a structured bug report template for a GitHub repository asking reporters for reproduction steps, environment versions, and minimal logs.",creative_and_writing
+Show mathematically why L1 regularization induces sparse weight vectors compared to L2 regularization by examining subgradients at zero.,reasoning_and_math
+Analyze this HTTP request smuggling vulnerability caused by mismatched Content-Length and Transfer-Encoding handling between our CDN and backend.,security_analysis
+"Write user persona profiles for three target buyers of a cloud cost optimization platform: FinOps Lead, Principal SRE, and VP of Engineering.",creative_and_writing
+Show by contradiction that no lossless compression algorithm can strictly shorten every distinct input bitstring of length N.,reasoning_and_math
+Debug my C pointer arithmetic bug in this custom ring buffer implementation where wrap-around overwrites unread bytes.,code_generation
+Extract and summarize customer support ticket resolution SLA compliance rates by priority tier and business hours in Pandas.,data_analysis
+Refactor this tangled jQuery DOM manipulation script into vanilla ES2023 modules using event delegation and template elements.,code_generation
+Compose a technical blog post narrative walking through how we diagnosed a subtle TCP delayed-ACK latency spike in production.,creative_and_writing
+Analyze survivorship bias in a mutual fund performance dataset by comparing active-only vs full historical fund return distributions.,data_analysis
+How can I configure Git to automatically sign every commit and tag using my Ed25519 SSH key instead of GPG?,general_instruction
+"Write user-friendly onboarding wizard copy for a cloud database setup flow asking users to choose region, instance tier, and backup window.",creative_and_writing
+Determine the asymptotic growth rate of f(n) = n^(1 / log log n) compared to polylogarithmic and polynomial functions.,reasoning_and_math
+"In a hash table using linear probing, explain primary clustering mathematically and why cluster lengths grow super-linearly as load factor approaches 1.",reasoning_and_math
+Can you refactor this nested JavaScript callback chain into clean async/await syntax with proper try/catch error boundaries?,code_generation
+"Build a Polars lazy query pipeline that filters 10GB of CSV telemetry logs, casts schemas, and computes hourly rolling standard deviations.",data_analysis
+Give me the screen or minicom command to connect to a USB serial console device at 115200 baud on Linux.,general_instruction
+Write a Spark SQL / PySpark aggregation pipeline that skew-joins a 500M-row fact table with a small dimension table using salted keys.,data_analysis
+Evaluate this DNS subdomain takeover risk where an orphaned CNAME points to an unclaimed cloud hosting endpoint.,security_analysis
+"Walk me through mounting an attached NVMe EBS volume on Linux, formatting it as ext4, and adding its UUID to /etc/fstab.",general_instruction
+Review our smart contract ERC-20 approve/transferFrom flow for front-running allowance double-spend vulnerabilities.,security_analysis
+"Write a landing page hero headline, subheadline, and three value-proposition blurbs for a real-time PostgreSQL query profiler.",creative_and_writing
+Compose a product launch email targeting indie hackers and solo developers for a zero-config Postgres hosting platform.,creative_and_writing
+Inspect this Rust unsafe block transmuting raw network byte slices into packed structs for out-of-bounds memory reads.,security_analysis
+Compose an announcement post for our developer forum introducing a new sandbox environment with synthetic test credit cards.,creative_and_writing
+Walk me through recovering a deleted file that was committed three commits ago in Git without rewriting branch history.,general_instruction
+Show why floating-point addition in IEEE 754 double precision is non-associative by constructing an explicit counterexample (a + b) + c != a + (b + c).,reasoning_and_math
+Draft a product requirements document (PRD) executive summary and success metrics section for a self-service API key rotation portal.,creative_and_writing
+Build a Spring Boot @RestControllerAdvice global exception handler that maps validation and domain errors to RFC 7807 Problem Details JSON.,code_generation
+Compose a transparent status page update informing users that database failover is complete and background queue catch-up is underway.,creative_and_writing
+Analyze the convergence rate of Newton-Raphson root finding near a simple root versus a root of multiplicity 2.,reasoning_and_math
+Create a Rust function using serde_json that deserializes a polymorphic webhook payload into an enum based on an inner event_type tag.,code_generation
+Determine the communication complexity lower bound for testing equality of two n-bit strings held by Alice and Bob deterministically.,reasoning_and_math
+"Perform quantile regression at the 10th, 50th, and 90th percentiles in statsmodels to model heteroscedastic delivery durations.",data_analysis
+Inspect our SAML 2.0 assertion consumer service for XML signature wrapping attacks when validating IdP responses.,security_analysis
+"Give me the SQLite CLI dot-commands to import a CSV file into a new table, enable headers and column mode, and dump the schema.",general_instruction
+Write a T-SQL query using CROSS APPLY to fetch the top 3 highest-value orders for every customer along with percentage of customer total spend.,data_analysis
+Prove that the Longest Increasing Subsequence (LIS) of an array of length n can be found in O(n log n) time using patience sorting piles.,reasoning_and_math
+Audit this Elasticsearch cluster exposed without role-based access control or transport layer encryption.,security_analysis
+Review our biometric authentication bypass risk on mobile devices where local LAContext evaluation isn't bound to a Keychain cryptographic key.,security_analysis
+How can I configure GitHub Actions caching for pnpm store directories to speed up CI workflows?,general_instruction
+"Write API reference documentation for a POST /v2/webhooks/endpoints route, covering authentication headers, request schema, idempotency keys, and error codes.",creative_and_writing
+How do I configure nvm or fnm in zsh so entering a directory with an .nvmrc file automatically switches the active Node.js version?,general_instruction
+How do I configure MySQL slow query log settings dynamically via SET GLOBAL without restarting the database server?,general_instruction
+"Give me the rsync command with flags to mirror a directory over SSH while preserving permissions, showing progress, and excluding node_modules.",general_instruction
+Provide the macOS launchd plist configuration to run a backup shell script every weekday at 2:00 AM.,general_instruction
+"Create a troubleshooting guide section for common TLS handshake failures, certificate chain mismatches, and proxy timeout errors.",creative_and_writing
+Debug why my Python multiprocessing.Pool deadlocks when child processes inherit an open logger lock from the parent process.,code_generation
+Write a Python asyncio semaphore wrapper that enforces both a maximum concurrency limit and a minimum delay between HTTP requests.,code_generation
+Derive the number of leaf comparisons needed by any comparison-based sorting algorithm using decision tree height lower bounds.,reasoning_and_math
+Fix the race condition in this Go worker pool where closing the results channel causes a panic before all goroutines finish sending.,code_generation
+Write an executive briefing memo summarizing the engineering impact of upcoming EU Cyber Resilience Act compliance requirements.,creative_and_writing
+Walk me through configuring pg_dump and pg_restore with parallel jobs (-j 4) using custom format (-Fc) for fast database migration.,general_instruction
+Write a PostgreSQL query using range types (tstzrange) to detect overlapping room reservations and calculate daily occupancy rates.,data_analysis
+Perform seasonal ARIMA (SARIMAX) residual diagnostics in Python including Ljung-Box autocorrelation tests and Q-Q normality plots.,data_analysis
+Build a Prisma ORM middleware extension that automatically injects tenant_id filters onto every multi-tenant model query.,code_generation
+Analyze this C buffer copy routine using strcpy and sprintf on network packet headers for stack-based buffer overflow exploitability.,security_analysis
+"Assess this Firebase Firestore security ruleset where allow read, write: if request.auth != null grants cross-user access.",security_analysis
+Write a BigQuery SQL query using UNNEST on repeated nested event_params to build a 5-step checkout funnel with drop-off percentages.,data_analysis
+"Write a PostgreSQL query using CUBE to generate multi-dimensional sales summaries across year, quarter, and channel.",data_analysis
+Provide the git filter-repo command to permanently purge an accidentally committed API key file from all repository history.,general_instruction
+Write a SQL query to identify user sessions by grouping click events whenever inactivity exceeds 30 minutes (sessionization with cumulative sum over gaps).,data_analysis
+Perform Granger causality tests between daily ad spend and organic search volume time series in statsmodels.,data_analysis
+Draft a business case memo advocating for migrating from self-managed Jenkins runners to ephemeral cloud CI workers.,creative_and_writing
+Analyze this Nginx reverse proxy configuration with alias /var/www/static/ on a location block missing a trailing slash for off-by-slash path traversal.,security_analysis
+Clean and align multi-timezone retail POS timestamps into local store wall-clock hours for peak staffing heatmap analysis.,data_analysis
+"Create a Matplotlib waterfall chart illustrating quarterly ARR bridge components: starting ARR, expansion, new logo, contraction, and churn.",data_analysis
+Compose a thank-you note and contributor spotlight post recognizing an external developer who fixed a long-standing memory leak.,creative_and_writing
+Review this Electron desktop application's BrowserWindow config with nodeIntegration: true and contextIsolation: false for RCE via XSS.,security_analysis
+Show me the ssh-keygen and ssh-copy-id commands to generate an ed25519 keypair and deploy the public key to a remote host.,general_instruction
+Analyze employee attrition drivers using Cox proportional hazards regression and concordance index evaluation in Python.,data_analysis
+Audit this Java Spring Boot Actuator configuration exposing /actuator/heapdump and /actuator/env without authentication.,security_analysis
+Explain why gradient descent with a fixed learning rate eta diverges on a quadratic bowl f(x) = 0.5 * x^T A x when eta > 2 / lambda_max(A).,reasoning_and_math
+"Given a Bloom filter of size m = 8192 bits and n = 1000 inserted elements, derive the optimal number of hash functions k that minimizes the false positive probability.",reasoning_and_math
+Give me the git rebase --onto command to transplant a feature branch onto main after its original parent branch was squash-merged.,general_instruction
+Perform Benjamini-Hochberg false discovery rate (FDR) correction on 45 simultaneous feature experiment p-values in Python.,data_analysis
+Draft a cold outreach email to CTOs of Series B fintech startups highlighting how automated SQL audit checks prevent data breaches.,creative_and_writing
+Write a ClickHouse SQL query utilizing quantileTDigest(0.99) and countIf to summarize high-cardinality ad impression logs over the last 30 days.,data_analysis
+Create a React ErrorBoundary component in TypeScript that logs component stacks to Sentry and renders a retry fallback UI.,code_generation
+Perform synthetic control group estimation in Python to measure the regional sales impact of a localized billboard campaign.,data_analysis
+"Analyze the amortized cost per operation of a dynamic array that doubles capacity when full and halves capacity only when occupancy drops below 25%, using the potential method.",reasoning_and_math
+"Write clear inline docstrings (Google style) for a Python module managing distributed locks, lease renewals, and fencing tokens.",creative_and_writing
+Provide the steps to configure local Postgres peer authentication so the ubuntu system user can connect without a password prompt.,general_instruction
+Perform market basket analysis using the Apriori algorithm in mlxtend to extract association rules with lift > 2.0 and confidence > 0.4.,data_analysis
+Create a Tailwind CSS plugin in JavaScript that generates fluid typography clamp() utility classes from a theme scale.,code_generation
+Draft a LinkedIn announcement post for a senior staff engineer sharing lessons learned from scaling WebSockets to two million concurrent connections.,creative_and_writing
+"Write a PostgreSQL query using GROUPING SETS to produce subtotals by region, product_line, and grand total in a single table scan.",data_analysis
+Write a BigQuery SQL query using HyperLogLog++ functions to merge daily unique user sketches into monthly active user counts.,data_analysis
+Draft a user story set for implementing role-based access control (RBAC) with custom granular permissions in a team workspace.,creative_and_writing
+Derive the variance reduction achieved by stratified sampling compared to simple random sampling when within-stratum variance is small.,reasoning_and_math
+Assess this gRPC microservice mesh lacking mutual TLS (mTLS) between internal pods for lateral movement and traffic sniffing.,security_analysis
+How do I check which shared dynamic libraries (.so) a compiled binary links against on Linux using ldd and readelf?,general_instruction
+Check this XSLT processor configuration in .NET to determine if document() function calls enable arbitrary file disclosure.,security_analysis
+Create a custom Webpack loader in Node.js that strips data-testid attributes from JSX templates during production builds.,code_generation
+Write a SQL query to calculate cumulative percentage of total defects (Pareto 80/20 analysis) by manufacturing defect code.,data_analysis
+Run a Kaplan-Meier survival analysis in Python using the lifelines library to compare churn curves between annual and monthly billing plans.,data_analysis
+Compose a speaker bio and session abstract for a DevSecOps summit talk on automating SBOM generation and container signing.,creative_and_writing
+Draft a developer survey questionnaire designed to measure friction points in our local development environment and CI pipelines.,creative_and_writing
+Check this Node.js prototype pollution vulnerability when recursively merging untrusted JSON payloads into application config objects.,security_analysis
+Draft a press release quote and technical backgrounder for a seed-stage startup launching an open-source vector database engine.,creative_and_writing
+Derive the Jacobian matrix of the softmax function s_i = exp(z_i) / sum_j exp(z_j) for both i = j and i != j cases.,reasoning_and_math
+Provide the steps to configure a WireGuard VPN peer tunnel between a cloud server and a developer laptop.,general_instruction
+Provide the steps to install and configure tailscale on a headless Linux server as an exit node with subnet routing.,general_instruction
+"Check this webhook fetcher service for Server-Side Request Forgery (SSRF) bypasses, including DNS rebinding, IPv6-mapped IPv4 addresses, and HTTP 302 redirects to 169.254.169.254.",security_analysis
+Give me the aws s3 sync command with --delete and --exclude flags to deploy static build assets to an S3 website bucket.,general_instruction
+Implement a Morris in-order binary tree traversal in Python that prints node values using O(1) space without recursion or a stack.,code_generation
+Analyze battery discharge degradation curves across 500 charge cycles using piecewise linear regression in Python.,data_analysis
+Write a SQL query to reconcile payment processor settlement payouts against internal order ledger entries and flag cent-level discrepancies.,data_analysis
+Create a Next.js App Router server action with Zod schema validation that mutates a Postgres record and calls revalidateTag.,code_generation
+Write an Elixir Phoenix LiveView handle_event callback for multi-file drag-and-drop uploads with live progress bars.,code_generation
+Analyze this HTTP cache poisoning vector where unkeyed X-Forwarded-Host headers are reflected inside cached HTML script links.,security_analysis
+Draft a technical specification narrative for a multi-region active-active failover strategy with bounded staleness.,creative_and_writing
+"Write a comprehensive README.md for an open-source Rust CLI tool that benchmarks HTTP/3 endpoints, including installation badges, usage examples, and configuration flags.",creative_and_writing
+Write a Ruby method using Enumerator::Lazy to stream and transform records from a paginated REST API without loading all pages into memory.,code_generation
+Compose a compelling README badge and feature matrix comparing our lightweight CSV parser against existing Python libraries.,creative_and_writing
+Audit this C# BinaryFormatter deserialization call on user-uploaded project files for gadget-chain arbitrary code execution.,security_analysis
+Give me the git worktree commands to check out a pull request branch in a parallel folder without stashing my current uncommitted changes.,general_instruction
+Prove that the set of all infinite binary sequences is uncountable using Cantor's diagonalization argument.,reasoning_and_math
+Write a Svelte 5 rune-based store that syncs reactive form state to sessionStorage with debounced serialization.,code_generation
+Write a PostgreSQL query using pg_trgm similarity scores to group near-duplicate company names in a CRM export.,data_analysis
+Draft a polite rejection email to a technical vendor explaining why their observability platform didn't meet our data residency requirements.,creative_and_writing
+Draft a release blog post announcing native Arm64 / Apple Silicon Docker image builds and benchmark improvements.,creative_and_writing
+"Write a Clojure transducer pipeline that filters sensor anomalies, normalizes readings, and partitions output into fixed-size chunks.",code_generation
+"Write a warm, informative welcome message for a new open-source Discord community channel outlining channels and community norms.",creative_and_writing
+Build a Remix loader and action pair that handles optimistic UI toggling of bookmark stars with progressive enhancement.,code_generation
+How do I configure Linux cgroups or systemd MemoryMax to cap memory usage of a runaway build process?,general_instruction
+Compose a formal vendor security assessment cover letter detailing our vulnerability disclosure program and penetration testing cadence.,creative_and_writing
+Analyze skew and kurtosis across skewed insurance claim amounts in Python and compare Box-Cox vs Yeo-Johnson power transformations.,data_analysis
+Assess this GitHub Actions workflow using pull_request_target with checkout of untrusted fork head code for secret exfiltration.,security_analysis
+Show me the steps to configure fail2ban on Ubuntu to ban IPs after 5 failed SSH login attempts within 10 minutes.,general_instruction
+Compose an internal engineering memo announcing a one-week 'fix-it' sprint dedicated to paying down flaky tests and observability gaps.,creative_and_writing
+How do I configure Apache Kafka topic retention.ms and cleanup.policy=compact using kafka-configs.sh?,general_instruction
+Audit this OAuth redirect_uri validation regex that checks contains('trusted.com') instead of exact host matching.,security_analysis
+Write a PostgreSQL trigger function in PL/pgSQL that automatically updates a modified_at timestamp column and logs old vs new JSONB diffs into an audit table.,code_generation
+Analyze call center abandonment rates vs queue wait time buckets in Pandas and fit a logistic curve to estimate patience thresholds.,data_analysis
+Compute the conditional expectation E[X | X > 2] where X follows an exponential distribution with rate parameter lambda = 0.5.,reasoning_and_math
+"Evaluate forecast accuracy across 12 retail stores by computing WAPE, MAPE, and symmetric MAPE (sMAPE) in Pandas while safely handling zero-sales days.",data_analysis
+An exponential backoff retry policy starts at 100 ms and doubles on each failure up to 5 retries; compute the total worst-case elapsed time excluding request execution duration.,reasoning_and_math
+Walk me through configuring Git LFS to track *.bin and *.onnx model weights in an existing repository.,general_instruction
+"Clean this messy customer transactions CSV in Pandas: standardize inconsistent ISO/US date formats, impute missing currency codes, and deduplicate overlapping refunds.",data_analysis
+Walk me through configuring a local DNS resolver with dnsmasq on macOS so all *.dev.local domains resolve to 127.0.0.1.,general_instruction
+Implement a custom PyTorch Dataset class that lazily loads 3D medical NIfTI volumes from disk and applies random spatial cropping.,code_generation
+"Show me how to use tmux to split panes, detach from a running build session, and reattach later over SSH.",general_instruction
+Detect sudden changepoints in server CPU utilization time series using the ruptures PELT algorithm in Python.,data_analysis
+"Compute the Gini coefficient and Lorenz curve coordinates in Python to measure revenue concentration across our top 1,000 enterprise accounts.",data_analysis
+Write a Java CompletableFuture orchestration helper that runs five microservice calls in parallel and falls back to cached defaults on timeout.,code_generation
+"Create a Vue 3 composable useVirtualList that renders only visible DOM nodes for a 50,000-row table with variable row heights.",code_generation
+Write a Python context manager that temporarily overrides environment variables for unit tests and restores original values on exit.,code_generation
+"In a hypercube network topology of dimension d = 8, determine the total number of nodes, node degree, network diameter, and bisection bandwidth.",reasoning_and_math
+Write a PHP Laravel custom validation rule that checks whether an uploaded image meets minimum aspect ratio and DPI constraints.,code_generation
+Show me the netcat (nc) or /dev/tcp bash trick to test whether a remote host and port are reachable when telnet isn't installed.,general_instruction
+Evaluate this OAuth 2.0 authorization code implementation in our SPA to determine if omitting PKCE allows authorization code interception attacks.,security_analysis
+"Assess our HTTP security headers—specifically missing Strict-Transport-Security, X-Frame-Options, and Cross-Origin-Opener-Policy—for clickjacking and downgrade risks.",security_analysis
+"Clean and normalize free-text job titles in a B2B leads dataset using regex rules, stopword stripping, and frequency-based canonical mapping.",data_analysis
+"Clean and parse semi-structured Apache access logs in Python into a structured DataFrame extracting status code classes, response bytes, and bot user-agents.",data_analysis
+Summarize clinical lab biomarker correlations using Spearman rank correlation matrices with Bonferroni-adjusted p-value masks.,data_analysis
+Create an Elixir GenServer that maintains an in-memory leaderboard and periodically flushes dirty state to PostgreSQL every 30 seconds.,code_generation
+Check this PHP file upload handler that relies solely on $_FILES['file']['type'] MIME header validation for arbitrary webshell upload vulnerabilities.,security_analysis

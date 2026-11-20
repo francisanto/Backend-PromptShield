@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-11-19T12:56:53.807079+00:00",
+  "input_file": "/Users/francisanto/backend/backendprompt/data/incoming/prompt_classification_dataset.csv",
+  "input_sha256": "a58f15f0c23254d815b18dd8d9240a21848b27c08a247d018266faba735bfda4",
+  "target_model": "task_classifier",
+  "target_model_name": "Task Classifier",
+  "total_incoming_records": 600,
+  "accepted_count": 600,
+  "rejected_count": 0,
+  "flagged_count": 0,
+  "rejection_breakdown": {},
+  "leakage_audit": {
+    "test_set_exact_leaks": 0,
+    "test_set_similarity_leaks": 0,
+    "test_leakage_threshold": 0.7,
+    "status": "ZERO_TEST_LEAKAGE_ENFORCED"
+  },
+  "artifacts_created": {
+    "accepted_csv": "/Users/francisanto/backend/backendprompt/data/clean/validated_incoming/prompt_classification_dataset_accepted.csv",
+    "rejected_csv": null
+  }
+}
